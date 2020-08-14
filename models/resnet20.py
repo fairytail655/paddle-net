@@ -65,6 +65,7 @@ class ResNet(Layer):
 
         # init_model(self)
         self.train_param = {
+            'epochs': 1,
             'batch_size': 128,
             'regime': {
                 0: {'optimizer': 'SGD', 'lr': 1e-1,
@@ -117,7 +118,7 @@ class ResNet(Layer):
         x = self.layer3(x)
 
         x = self.avgpool(x)
-        x = fluid.layers.reshape(x, [x.shape[1], -1])
+        x = fluid.layers.reshape(x, [x.shape[0], -1])
         # x = x.view(x.size(0), -1)
         x = self.fc(x)
 

@@ -7,12 +7,14 @@ import math
 # from preprocess import get_transform
 import paddle
 import paddle.fluid as fluid
+import numpy as np
 from data import get_dataset
 from utils import *
 from datetime import datetime
 from ast import literal_eval
 from draw import *
 from rich.progress import Progress, BarColumn, TimeRemainingColumn, TextColumn
+
 
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
@@ -33,8 +35,8 @@ parser.add_argument('--model', '-a', metavar='MODEL', default='resnet20',
                     ' (default: lenet)')
 # parser.add_argument('--input_size', type=int, default='32',
 #                     help='image input size')
-parser.add_argument('--model_config', default='',
-                    help='additional architecture configuration')
+# parser.add_argument('--model_config', default='',
+#                     help='additional architecture configuration')
 # parser.add_argument('--type', default='torch.cuda.FloatTensor',
 #                     help='type of tensor - e.g torch.cuda.HalfTensor')
 # parser.add_argument('--gpus', default='0',
@@ -65,6 +67,8 @@ parser.add_argument('-e', '--evaluate', type=str, metavar='FILE',
 def main():
     global args, best_prec
     global progress, task2, task3
+    global input_size, in_dim, target_size
+
     best_prec = 0
     args = parser.parse_args()
 
@@ -90,14 +94,32 @@ def main():
 #     else:
 #         args.gpus = None
 
-    with fluid.dygraph.guard():
-        # create model
-        logging.info("creating model %s", args.model)
-        model = models.__dict__[args.model]
-        model_config = {'dataset': args.dataset}
+    # create model
+    logging.info("creating model %s", args.model)
+    model = models.__dict__[args.model]
+    model_config = {'dataset': args.dataset}
 
-        if args.model_config is not '':
-            model_config = dict(model_config, **literal_eval(args.model_config))
+    # save net struct: __model__
+    # command: visualdl --model save_path/struct/__model__ --port 8080
+    if args.dataset == 'mnist':
+        input_size = 28
+        in_dim = 1
+        target_size = 1
+    elif args.dataset == 'cifar10':
+        input_size = 32
+        in_dim = 3
+        target_size = 1
+    net = model(**model_config)
+    params = getattr(net, 'train_param', {'batch_size': args.batch_size})
+    image = fluid.layers.data(name='img', shape=[params['batch_size'], in_dim, input_size, input_size], 
+                              dtype='float32', append_batch_size=False)
+    predict = net(image)
+    exe = fluid.Executor(fluid.CPUPlace())
+    exe.run(fluid.default_startup_program())
+    fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
+                                  target_vars=[predict], executor=exe, params_filename='__params__')
+
+    with fluid.dygraph.guard():
 
         model = model(**model_config)
         logging.info("created model with configuration: %s", model_config)
@@ -129,10 +151,14 @@ def main():
 
         # Train Parameters Load
         train_param = getattr(model, 'train_param', {})
+        if 'epochs' in train_param:
+            epochs = train_param['epochs']
+        else:
+            epochs = args.epochs
         if 'batch_size' in train_param:
             batch_size = train_param['batch_size']
         else:
-            batch_size: args.batch_size
+            batch_size = args.batch_size
         if 'regime' in train_param:
             regime = train_param['regime']
         else:
@@ -148,35 +174,26 @@ def main():
         else:
             criterion = fluid.layers.softmax_with_cross_entropy
         logging.info("\n----------------------------------------------\n"
-                     "batch_size: {}\n"
+                     "epochs: {}\tbatch_size: {}\n"
                      "regime: {}\n"
                      "transform: {}\n"
                      "criterion: {}\n"
                      "----------------------------------------------"
-                     .format(batch_size, regime, transform, criterion.__name__)
+                     .format(epochs, batch_size, regime, transform, criterion.__name__)
         )
-
-        optimizer = fluid.optimizer.SGDOptimizer(learning_rate=args.lr, 
-                                                 parameter_list=model.parameters())
 
         # Data loading code
         train_data = get_dataset(args.dataset, 'train', transform['train'])
         train_len = len(list(train_data()))
         train_loader = paddle.batch(paddle.reader.shuffle(train_data, train_len),
-                                    batch_size=batch_size)
+                                    batch_size=batch_size)()
         logging.info('train dataset size: %d', train_len)
 
         val_data = get_dataset(args.dataset, 'eval', transform['eval'])
         val_len = len(list(val_data()))
         val_loader = paddle.batch(paddle.reader.shuffle(val_data, val_len),
-                                    batch_size=batch_size)
+                                    batch_size=batch_size)()
         logging.info('val dataset size: %d', val_len)
-
-    #     # print net struct
-    #     if args.dataset == 'mnist':
-    #         summary(model, (1, 28, 28))
-    #     elif args.dataset == 'cifar10':
-    #         summary(model, (3, 32, 32))
 
     #     if args.evaluate:
     #         with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
@@ -193,60 +210,66 @@ def main():
     #         return
 
 
-    #     # restore results
-    #     train_loss_list, train_prec_list = [], []
-    #     val_loss_list, val_prec_list = [], []
+        # # restore results
+        # train_loss_list, train_prec_list = [], []
+        # val_loss_list, val_prec_list = [], []
 
-    #     # print progressor
-    #     with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
-    #                   BarColumn(),
-    #                   "[progress.percentage]{task.percentage:>3.0f}%",
-    #                   TimeRemainingColumn(),
-    #                   auto_refresh=False) as progress:
-    #         task1 = progress.add_task("[red]epoch:", total=args.epochs)
-    #         task2 = progress.add_task("[blue]training:", total=math.ceil(len(train_data)/args.batch_size))
-    #         task3 = progress.add_task("[yellow]validating:", total=math.ceil(len(val_data)/args.batch_size))
+        optimizer = fluid.optimizer.SGDOptimizer(learning_rate=args.lr, 
+                                                 parameter_list=model.parameters())
 
-    #         for i in range(args.start_epoch):
-    #             progress.update(task1, advance=1, refresh=True)
+        # print progressor
+        with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
+                      BarColumn(),
+                      "[progress.percentage]{task.percentage:>3.0f}%",
+                      TimeRemainingColumn(),
+                      auto_refresh=False) as progress:
+            task1 = progress.add_task("[red]epoch:", total=epochs)
+            task2 = progress.add_task("[blue]train:", total=math.ceil(train_len/args.batch_size))
+            task3 = progress.add_task("[yellow]validate:", total=math.ceil(val_len/args.batch_size))
 
-    #         begin = time.time()
-    #         for epoch in range(args.start_epoch, args.epochs):
-    #             start = time.time()
-    #             optimizer = adjust_optimizer(optimizer, epoch, regime)
+            for i in range(args.start_epoch):
+                progress.update(task1, advance=1, refresh=True)
 
-    #             # train for one epoch
-    #             train_loss, train_prec = train(
-    #                 train_loader, model, criterion, epoch, optimizer)
+            begin = time.time()
+            for epoch in range(args.start_epoch, epochs):
+                start = time.time()
+                # optimizer = adjust_optimizer(optimizer, epoch, regime)
+
+                # train for one epoch
+                train_loss, train_prec = train(
+                    train_loader, model, criterion, epoch, optimizer)
+
     #             train_loss_list.append(train_loss)
     #             train_prec_list.append(train_prec)
 
-    #             # evaluate on validation set
-    #             val_loss, val_prec = validate(
-    #                 val_loader, model, criterion, epoch)
-    #             val_loss_list.append(val_loss)
-    #             val_prec_list.append(val_prec)
+                # evaluate on validation set
+                val_loss, val_prec = validate(
+                    val_loader, model, criterion, epoch)
+                val_loss_list.append(val_loss)
+                val_prec_list.append(val_prec)
 
-    #             # remember best prec@1 and save checkpoint
-    #             is_best = val_prec > best_prec
-    #             best_prec = max(val_prec, best_prec)
+                # remember best prec@1 and save checkpoint
+                is_best = val_prec > best_prec
+                best_prec = max(val_prec, best_prec)
 
-    #             save_checkpoint({
-    #                 'epoch': epoch + 1,
-    #                 'model': args.model,
-    #                 'config': args.model_config,
-    #                 'state_dict': model.state_dict(),
-    #                 'best_prec': best_prec,
-    #                 'regime': regime
-    #             }, is_best, path=save_path)
-    #             logging.info(' Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\n'
-    #                         ' Training Loss {train_loss:.4f} \t'
-    #                         'Training Prec {train_prec1:.3f} \t'
-    #                         'Validation Loss {val_loss:.4f} \t'
-    #                         'Validation Prec {val_prec1:.3f} \t'
-    #                         .format(epoch + 1, args.epochs, time.time()-start,
-    #                                 train_loss=train_loss, val_loss=val_loss, 
-    #                                 train_prec1=train_prec, val_prec1=val_prec))
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'model': args.model,
+                    'config': args.model_config,
+                    'state_dict': model.state_dict(),
+                    'best_prec': best_prec,
+                    'regime': regime
+                }, is_best, path=save_path)
+                logging.info('\n---------------------------------\n'
+                            'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
+                            'Training Loss {train_loss:.4f} \t'
+                            'Training Prec {train_prec1:.3f} \t'
+                            'Validation Loss {val_loss:.4f} \t'
+                            'Validation Prec {val_prec1:.3f} \n'
+                            '-----------------------------------'
+                            .format(epoch + 1, args.epochs, time.time()-start,
+                                    train_loss=train_loss, val_loss=val_loss, 
+                                    train_prec1=train_prec, val_prec1=val_prec))
 
     #             results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
     #                         train_error1=100 - train_prec, val_error1=100 - val_prec)
@@ -262,85 +285,65 @@ def main():
     #     epochs = list(range(args.epochs))
     #     draw2(epochs, train_loss_list, val_loss_list, train_prec_list, val_prec_list)
 
-    # def forward(data_loader, model, criterion, epoch=0, training=True, optimizer=None):
-    #     batch_time = AverageMeter()
-    #     data_time = AverageMeter()
-    #     losses = AverageMeter()
-    #     precisions = AverageMeter()
+def forward(data_loader, model, criterion, epoch=0, training=True, optimizer=None):
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    precisions = AverageMeter()
 
-    #     start = time.time()
+    start = time.time()
 
-    #     for i, (inputs, target) in enumerate(data_loader):
-    #         # measure data loading time
-    #         data_time.update(time.time() - start)
-    #         if args.gpus is not None:
-    #             target = target.cuda()
+    for i, data in enumerate(data_loader):
+        # measure data loading time
+        data_time.update(time.time() - start)
+        # load inputs and target
+        x_data = np.array([item[0] for item in data], dtype='float32').reshape(-1, in_dim, input_size, input_size)
+        y_data = np.array([item[1] for item in data], dtype='int64').reshape(-1, target_size)
+        # convert numpy.ndarry to Tensor
+        image = fluid.dygraph.to_variable(x_data)
+        label = fluid.dygraph.to_variable(y_data)
+        label.stop_gradient = True
+        # get model output
+        output = model(image)
 
-    #         if not training:
-    #             with torch.no_grad():
-    #                 input_var = Variable(inputs.type(args.type))
-    #                 target_var = Variable(target)
-    #                 # compute output
-    #                 output = model(input_var)
-    #         else:
-    #             input_var = Variable(inputs.type(args.type))
-    #             target_var = Variable(target)
-    #             # compute output
-    #             output = model(input_var)
+        loss = criterion(output, label)
+        avg_loss = fluid.layers.mean(loss)
+        losses.update(avg_loss.numpy()[0], loss.shape[0])
 
-    #         loss = criterion(output, target_var)
-    #         if type(output) is list:
-    #             output = output[0]
+        if training:
+            avg_loss.backward()
+            optimizer.minimize(avg_loss)
+            model.clear_gradients()
 
-    #         # measure accuracy and record loss
-    #         prec = accuracy(output.data, target)
-    #         losses.update(loss.item(), inputs.size(0))
-    #         precisions.update(prec.item(), inputs.size(0))
+        pred = fluid.layers.softmax(output)
+        acc = fluid.layers.accuracy(pred, label)
+        precisions.update(acc.numpy()[0], pred.shape[0])
+        # measure elapsed time
+        batch_time.update(time.time() - start)
+        # update progressor
+        if training:
+            progress.update(task2, advance=1, refresh=True)
+        else:
+            progress.update(task3, advance=1, refresh=True)
 
-    #         if training:
-    #             # compute gradient and do SGD step
-    #             optimizer.zero_grad()
-    #             loss.backward()
-    #             optimizer.step()
+    if not training:
+        progress.update(task3, completed=0)
+    else:
+        progress.update(task2, completed=0)
 
-    #         # measure elapsed time
-    #         batch_time.update(time.time() - start)
+    return losses.avg, precisions.avg
 
-    #         # update progressor
-    #         if training:
-    #             progress.update(task2, advance=1, refresh=True)
-    #         else:
-    #             progress.update(task3, advance=1, refresh=True)
+def train(data_loader, model, criterion, epoch, optimizer):
+    # switch to train mode
+    model.train()
+    return forward(data_loader, model, criterion, epoch,
+                    training=True, optimizer=optimizer)
 
-    #         # if i % args.print_freq == 0:
-    #         #     logging.info('{phase} - Epoch: [{0}][{1}/{2}]\t'
-    #         #                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-    #         #                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-    #         #                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-    #         #                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(
-    #         #                      epoch, i, len(data_loader),
-    #         #                      phase='TRAINING' if training else 'EVALUATING',
-    #         #                      batch_time=batch_time,
-    #         #                      data_time=data_time, loss=losses, top1=top1))
-
-    #     if not training:
-    #         progress.update(task3, completed=0)
-    #     else:
-    #         progress.update(task2, completed=0)
-
-    #     return losses.avg, precisions.avg
-
-    # def train(data_loader, model, criterion, epoch, optimizer):
-    #     # switch to train mode
-    #     model.train()
-    #     return forward(data_loader, model, criterion, epoch,
-    #                    training=True, optimizer=optimizer)
-
-    # def validate(data_loader, model, criterion, epoch):
-    #     # switch to evaluate mode
-    #     model.eval()
-    #     return forward(data_loader, model, criterion, epoch,
-    #                    training=False, optimizer=None)
+    def validate(data_loader, model, criterion, epoch):
+        # switch to evaluate mode
+        model.eval()
+        return forward(data_loader, model, criterion, epoch,
+                       training=False, optimizer=None)
 
 if __name__ == '__main__':
     main()

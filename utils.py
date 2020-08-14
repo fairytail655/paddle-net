@@ -1,6 +1,7 @@
 import os
 # import logging.config
 import logging
+import paddle
 import shutil
 import pandas as pd
 from bokeh.io import output_file, save, show
@@ -27,17 +28,6 @@ def setup_logging(log_file='log.txt'):
     hander.setFormatter(formatter)
     # add hander
     logger.addHandler(hander)
-    # logging.basicConfig(level=logging.INFO,
-    #                     format="%(asctime)s - %(levelname)s - %(message)s",
-    #                     datefmt="%Y-%m-%d %H:%M:%S",
-    #                     filename=log_file,
-    #                     filemode='w')
-    # console = logging.StreamHandler()
-    # console.setLevel(logging.INFO)
-    # formatter = logging.Formatter('%(message)s')
-    # console.setFormatter(formatter)
-    # logging.getLogger('').addHandler(console)
-
 
 class ResultsLog(object):
 
@@ -84,7 +74,7 @@ class ResultsLog(object):
         self.figures.append(fig)
 
 
-def save_checkpoint(state, is_best, path='.', filename='checkpoint.pth.tar', save_all=False):
+def save_checkpoint(state, is_best, path='.', filename='checkpoint.csv', save_all=False):
     filename = os.path.join(path, filename)
     torch.save(state, filename)
     if is_best:
@@ -112,42 +102,30 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-# __optimizers = {
-#     'SGD': torch.optim.SGD,
-#     'ASGD': torch.optim.ASGD,
-#     'Adam': torch.optim.Adam,
-#     'Adamax': torch.optim.Adamax,
-#     'Adagrad': torch.optim.Adagrad,
-#     'Adadelta': torch.optim.Adadelta,
-#     'Rprop': torch.optim.Rprop,
-#     'RMSprop': torch.optim.RMSprop
-# }
+__optimizers = {
+    'SGD': paddle.fluid.optimizer.SGDOptimizer,
+    'Momentum': paddle.fluid.optimizer.MomentumOptimizer,
+    'Adam': paddle.fluid.optimizer.AdamOptimizer,
+}
 
 
-# def adjust_optimizer(optimizer, epoch, config):
-#     """Reconfigures the optimizer according to epoch and config dict"""
-#     def modify_optimizer(optimizer, setting):
-#         if 'optimizer' in setting:
-#             optimizer = __optimizers[setting['optimizer']](
-#                 optimizer.param_groups)
-#             # logging.debug('OPTIMIZER - setting method = %s' %
-#             #               setting['optimizer'])
-#         for param_group in optimizer.param_groups:
-#             for key in param_group.keys():
-#                 if key in setting:
-#                     # logging.debug('OPTIMIZER - setting %s = %s' %
-#                     #               (key, setting[key]))
-#                     param_group[key] = setting[key]
-#         return optimizer
+def adjust_optimizer(optimizer, epoch, config):
+    """Reconfigures the optimizer according to epoch and config dict"""
+    def modify_optimizer(optimizer, setting):
+        if 'optimizer' in setting:
+            optimizer = __optimizers[setting['optimizer']](
+                optimizer.param_groups)
+        for param_group in optimizer.param_groups:
+            for key in param_group.keys():
+                if key in setting:
+                    param_group[key] = setting[key]
+        return optimizer
 
-#     if callable(config):
-#         optimizer = modify_optimizer(optimizer, config(epoch))
-#     else:
-#         for e in range(epoch + 1):  # run over all epochs - sticky setting
-#             if e in config:
-#                 optimizer = modify_optimizer(optimizer, config[e])
+        for e in range(epoch + 1):  # run over all epochs - sticky setting
+            if e in config:
+                optimizer = modify_optimizer(optimizer, config[e])
 
-#     return optimizer
+    return optimizer
 
 
 # def accuracy(output, target):
