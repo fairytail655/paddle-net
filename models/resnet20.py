@@ -1,7 +1,8 @@
 import paddle
 import paddle.fluid as fluid
 import math
-from paddle.fluid.dygraph import Layer, LayerList 
+import numpy as np
+from paddle.fluid.dygraph import Layer, Sequential 
 from paddle.fluid.dygraph.nn import Conv2D, BatchNorm, Pool2D, Linear
 
 __all__ = ['resnet20']
@@ -41,8 +42,7 @@ class BasicBlock(Layer):
         out = self.bn2(out)
 
         if self.downsample is not None:
-            for layer in self.downsample:
-                identity = layer(identity)
+            identity = self.downsample(identity)
 
         out += identity
         out = self.relu2(out)
@@ -64,58 +64,60 @@ class ResNet(Layer):
         self.fc = Linear(64, num_classes)
 
         # init_model(self)
-        # self.regime = {
-        #     0: {'optimizer': 'SGD', 'lr': 1e-1,
-        #         'weight_decay': 1e-4, 'momentum': 0.9},
-        #     81: {'lr': 1e-2},
-        #     122: {'lr': 1e-3, 'weight_decay': 0},
-        #     164: {'lr': 1e-4}
-        # }
-
-        # self.input_transform = {
-        #     'train': transforms.Compose([
-        #         transforms.RandomCrop(32, padding=4),  #先四周填充0，在吧图像随机裁剪成32*32
-        #         transforms.RandomHorizontalFlip(),  #图像一半的概率翻转，一半的概率不翻转
-        #         transforms.ToTensor(),
-        #         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)), #R,G,B每层的归一化用到的均值和方差
-        #                         # normalize
-        #     ]),
-        #     'eval': transforms.Compose([
-        #         transforms.ToTensor(),
-        #         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        #         # normalize
-        #     ])
-        # }    
+        self.train_param = {
+            'batch_size': 128,
+            'regime': {
+                0: {'optimizer': 'SGD', 'lr': 1e-1,
+                    'weight_decay': 1e-4, 'momentum': 0.9},
+                81: {'lr': 1e-2},
+                122: {'lr': 1e-3, 'weight_decay': 0},
+                164: {'lr': 1e-4}
+            },
+            'transform': {
+                'train': None,
+                'eval': None,
+                # 'train': transforms.Compose([
+                #     transforms.RandomCrop(32, padding=4),  #先四周填充0，在吧图像随机裁剪成32*32
+                #     transforms.RandomHorizontalFlip(),  #图像一半的概率翻转，一半的概率不翻转
+                #     transforms.ToTensor(),
+                #     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)), #R,G,B每层的归一化用到的均值和方差
+                #                     # normalize
+                # ]),
+                # 'eval': transforms.Compose([
+                #     transforms.ToTensor(),
+                #     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+                #     # normalize
+                # ])
+            },    
+        }
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = LayerList([
+            downsample = Sequential(
                 Conv2D(self.inplanes, planes * block.expansion, filter_size=1, stride=stride, bias_attr=False),
                 BatchNorm(planes * block.expansion),
-            ])
+            )
 
-        layers = LayerList()
+        layers = []
         layers.append(block(self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes))
 
-        return layers
+        return Sequential(*layers)
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu1(x)
 
-        for layer in self.layer1:
-            x = layer(x)
-        for layer in self.layer2:
-            x = layer(x)
-        for layer in self.layer3:
-            x = layer(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
 
         x = self.avgpool(x)
+        x = fluid.layers.reshape(x, [x.shape[1], -1])
         # x = x.view(x.size(0), -1)
         x = self.fc(x)
 
@@ -132,12 +134,30 @@ def resnet20(**kwargs):
 
     return ResNet(num_classes=num_classes, in_dim=in_dim)
 
+# x = np.random.randn(*[2,3,32,32])
+# x = x.astype('float32')
 # with fluid.dygraph.guard():
-
-#     net = resnet20()
-
-#     # for name,layer in net.named_sublayers():
-#     #     print(name)
-#     # print(net.state_dict())
-
-#     fluid.save_dygraph(net.state_dict(), "resnet20")
+#     # 创建LeNet类的实例，指定模型名称和分类的类别数目
+    # m = ResNet()
+    # x = fluid.dygraph.to_variable(x)
+#     # 通过调用LeNet从基类继承的sublayers()函数，
+#     # 查看LeNet中所包含的子层
+    # c = m(x)
+    # print(c)
+    # print(m.sublayers())
+    # x = fluid.dygraph.to_variable(x)
+    # for item in m.sublayers():
+    #     # item是LeNet类中的一个子层
+    #     # 查看经过子层之后的输出数据形状
+    #     try:
+    #         x = item(x)
+    #     except:
+    #         x = fluid.layers.reshape(x, [x.shape[0], -1])
+    #         x = item(x)
+    #     if len(item.parameters())==2:
+    #         # 查看卷积和全连接层的数据和参数的形状，
+    #         # 其中item.parameters()[0]是权重参数w，item.parameters()[1]是偏置参数b
+    #         print(item.full_name(), x.shape, item.parameters()[0].shape, item.parameters()[1].shape)
+    #     else:
+    #         # 池化层没有参数
+    #         print(item.full_name(), x.shape)

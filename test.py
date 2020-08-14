@@ -1,21 +1,22 @@
 import paddle
 import paddle.fluid as fluid
-from paddle.fluid.dygraph.nn import Linear
+from paddle.fluid.dygraph.nn import Linear, Conv2D
+from models import *
 
-class MNIST(fluid.dygraph.Layer):
-    def __init__(self):
-        super(MNIST, self).__init__()
-        
-        # 定义一层全连接层，输出维度是1，激活函数为None，即不使用激活函数
-        self.fc = Linear(input_dim=784, output_dim=1, act=None)
-        
-    # 定义网络结构的前向计算过程
-    def forward(self, inputs):
-        outputs = self.fc(inputs)
-        return outputs
+net = resnet20()
 
-with fluid.dygraph.guard():
-    # 声明网络结构
-    model = MNIST()
-    # fluid.save_dygraph(model.state_dict(), 'mnist')
-    fluid.io.save_inference_model()
+image = fluid.layers.data(name='img', shape=[3, 32, 32], dtype='float32')
+# label = fluid.layers.data(name='label', shape=[10], dtype='int64')
+# feeder = fluid.DataFeeder(feed_list=[image, label], place=fluid.CPUPlace())
+predict = net(image)
+
+# loss = fluid.layers.softmax_with_cross_entropy(input=predict, label=label)
+# avg_loss = fluid.layers.mean(loss)
+
+exe = fluid.Executor(fluid.CPUPlace())
+exe.run(fluid.default_startup_program())
+
+# 数据输入及训练过程
+
+# 保存预测模型。注意，用于预测的模型网络结构不需要保存标签和损失。
+fluid.io.save_inference_model(dirname="./pre_model", feeded_var_names=['img'], target_vars=[predict], executor=exe, params_filename='__params__')
