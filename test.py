@@ -17,7 +17,10 @@ with fluid.dygraph.guard():
 
     model = net()
     state_dict = model.state_dict()
-    state_dict['epoch'] = 1
+    param = state_dict.copy()
+    a = {'epoch': 1}
+    param['epoch'] = a['epoch']
+    param['aaa'] = {"a": 1}
     # param = collections.OrderedDict()
     # param.values()
     # param['haha'] = 'a'
@@ -25,4 +28,4 @@ with fluid.dygraph.guard():
     # param['model_state_dict'] = state_dict
     print(state_dict)
     # print(type(param))
-    fluid.dygraph.save_dygraph(state_dict, 'haha')
+    # fluid.dygraph.save_dygraph(state_dict, 'haha')

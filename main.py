@@ -119,7 +119,10 @@ def main():
     fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
                                   target_vars=[predict], executor=exe, params_filename='__params__')
 
-    with fluid.dygraph.guard(fluid.CUDAPlace(0)):
+    device = fluid.CUDAPlace(0)
+    # device = fluid.CPUPlace()
+
+    with fluid.dygraph.guard(device):
 
         model = model(**model_config)
         logging.info("created model with configuration: %s", model_config)
@@ -252,21 +255,21 @@ def main():
                 is_best = val_prec > best_prec
                 best_prec = max(val_prec, best_prec)
 
-                save_checkpoint({
-                    'epoch': epoch + 1,
-                    'model': args.model,
-                    'config': model_config,
-                    'state_dict': model.state_dict(),
-                    'best_prec': best_prec,
-                    'regime': regime
-                }, is_best, path=save_path)
-                logging.info('\n---------------------------------\n'
+                model_dict = model.state_dict()
+                save_checkpoint(model_dict,
+                                {'epoch': epoch + 1, 
+                                 'model': args.model,
+                                 'config': model_config,
+                                 'best_prec': best_prec,
+                                 'regime': regime },
+                                is_best, path=save_path)
+                logging.info('\n----------------------------------------------\n'
                             'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
                             'Training Loss {train_loss:.4f} \t'
                             'Training Prec {train_prec1:.3f} \t'
                             'Validation Loss {val_loss:.4f} \t'
                             'Validation Prec {val_prec1:.3f} \n'
-                            '-----------------------------------'
+                            '----------------------------------------------'
                             .format(epoch + 1, args.epochs, time.time()-start,
                                     train_loss=train_loss, val_loss=val_loss, 
                                     train_prec1=train_prec, val_prec1=val_prec))
@@ -279,7 +282,7 @@ def main():
                 progress.update(task1, advance=1, refresh=True)
 
         logging.info('----------------------------------------------------------------\n'
-                    'Whole Cost Time: {2:.2f}s      Best Validation Prec {val_prec1:.3f}'
+                    'Whole Cost Time: {0:.2f}s      Best Validation Prec {1:.3f}'
                     '-----------------------------------------------------------------'.format(time.time()-begin, best_prec))
         
     #     epochs = list(range(args.epochs))

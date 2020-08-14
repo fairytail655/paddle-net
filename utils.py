@@ -22,7 +22,7 @@ def setup_logging(log_file='log.txt'):
     logger.setLevel(logging.INFO)
     # create hander
     hander = logging.FileHandler(log_file, mode='w')
-    hander.setLevel(logging.DEBUG)
+    hander.setLevel(logging.INFO)
     # define output format
     formatter = logging.Formatter("%(asctime)s - %(levelname)s : %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     hander.setFormatter(formatter)
@@ -74,8 +74,8 @@ class ResultsLog(object):
         self.figures.append(fig)
 
 
-def save_checkpoint(state, is_best, path='.', filename='checkpoint', save_all=False):
-    state_dict = state['state_dict']
+def save_checkpoint(model_dict, state, is_best, path='.', filename='checkpoint', save_all=False):
+    state_dict = model_dict.copy()
     state_dict['epoch'] = state['epoch']
     state_dict['model'] = state['model']
     state_dict['config'] = state['config']
