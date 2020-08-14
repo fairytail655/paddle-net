@@ -245,8 +245,8 @@ def main():
                 # evaluate on validation set
                 val_loss, val_prec = validate(
                     val_loader, model, criterion, epoch)
-                val_loss_list.append(val_loss)
-                val_prec_list.append(val_prec)
+                # val_loss_list.append(val_loss)
+                # val_prec_list.append(val_prec)
 
                 # remember best prec@1 and save checkpoint
                 is_best = val_prec > best_prec
