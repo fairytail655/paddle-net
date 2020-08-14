@@ -110,7 +110,7 @@ def main():
         in_dim = 3
         target_size = 1
     net = model(**model_config)
-    params = getattr(net, 'train_param', {'batch_size': args.batch_size})
+    params = getattr(net, 'train_config', {'batch_size': args.batch_size})
     image = fluid.layers.data(name='img', shape=[params['batch_size'], in_dim, input_size, input_size], 
                               dtype='float32', append_batch_size=False)
     predict = net(image)
@@ -151,26 +151,26 @@ def main():
 
         # Train Parameters Load
         train_config = getattr(model, 'train_config', {})
-        if 'epochs' in train_param:
-            epochs = train_param['epochs']
+        if 'epochs' in train_config:
+            epochs = train_config['epochs']
         else:
             epochs = args.epochs
-        if 'batch_size' in train_param:
-            batch_size = train_param['batch_size']
+        if 'batch_size' in train_config:
+            batch_size = train_config['batch_size']
         else:
             batch_size = args.batch_size
-        if 'regime' in train_param:
-            regime = train_param['regime']
+        if 'regime' in train_config:
+            regime = train_config['regime']
         else:
             regime = {0: {'optimizer': args.optimizer, 
                            'lr': args.lr, 'momentum': args.momentum, 
                            'weight_decay': args.weight_decay}}
-        if 'transform' in train_param:
-            transform = train_param['transform']
+        if 'transform' in train_config:
+            transform = train_config['transform']
         else:
             transform = {'train': None, 'eval': None}
-        if 'criterion' in train_param:
-            criterion = train_param['criterion']
+        if 'criterion' in train_config:
+            criterion = train_config['criterion']
         else:
             criterion = fluid.layers.softmax_with_cross_entropy
         logging.info("\n----------------------------------------------\n"
