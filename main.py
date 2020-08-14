@@ -119,7 +119,7 @@ def main():
     fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
                                   target_vars=[predict], executor=exe, params_filename='__params__')
 
-    with fluid.dygraph.guard():
+    with fluid.dygraph.guard(fluid.CUDAPlace(0)):
 
         model = model(**model_config)
         logging.info("created model with configuration: %s", model_config)
@@ -255,7 +255,7 @@ def main():
                 save_checkpoint({
                     'epoch': epoch + 1,
                     'model': args.model,
-                    'config': args.model_config,
+                    'config': model_config,
                     'state_dict': model.state_dict(),
                     'best_prec': best_prec,
                     'regime': regime
