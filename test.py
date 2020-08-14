@@ -5,27 +5,18 @@ from models import *
 import numpy as np
 import collections
 
-class net(fluid.dygraph.Layer):
-    def __init__(self, n={"a": 0}):
-        super(net, self).__init__()
-        self.conv1 = Conv2D(3, 3, 3)
-
-    def forward(self, input):
-        return self.conv1(input)
-
 with fluid.dygraph.guard():
 
-    model = net()
+    model = resnet20()
     state_dict = model.state_dict()
     param = state_dict.copy()
-    a = {'epoch': 1}
-    param['epoch'] = a['epoch']
+    param['epoch'] = 1
     param['aaa'] = {"a": 1}
     # param = collections.OrderedDict()
     # param.values()
     # param['haha'] = 'a'
     # param.update()
     # param['model_state_dict'] = state_dict
-    print(state_dict)
-    # print(type(param))
-    # fluid.dygraph.save_dygraph(state_dict, 'haha')
+    # print(state_dict)
+    print(type(param))
+    # fluid.dygraph.save_dygraph(param, 'haha')
