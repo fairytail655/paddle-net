@@ -1,9 +1,9 @@
 import os
-# import logging.config
 import logging
 import paddle
 import shutil
 import pandas as pd
+import paddle.fluid as fluid
 from bokeh.io import output_file, save, show
 from bokeh.plotting import figure
 from bokeh.layouts import column
@@ -74,14 +74,20 @@ class ResultsLog(object):
         self.figures.append(fig)
 
 
-def save_checkpoint(state, is_best, path='.', filename='checkpoint.csv', save_all=False):
+def save_checkpoint(state, is_best, path='.', filename='checkpoint', save_all=False):
+    state_dict = state['state_dict']
+    state_dict['epoch'] = state['epoch']
+    state_dict['model'] = state['model']
+    state_dict['config'] = state['config']
+    state_dict['best_prec'] = state['best_prec']
+    state_dict['regime'] = state['regime']
     filename = os.path.join(path, filename)
-    torch.save(state, filename)
+    fluid.dygraph.save_dygraph(state_dict, filename)
     if is_best:
-        shutil.copyfile(filename, os.path.join(path, 'model_best.pth.tar'))
+        shutil.copyfile(filename+'.pdparams', os.path.join(path, 'best_model.pdparams'))
     if save_all:
-        shutil.copyfile(filename, os.path.join(
-            path, 'checkpoint_epoch_%s.pth.tar' % state['epoch']))
+        shutil.copyfile(filename+'.pdparams', os.path.join(
+            path, 'checkpoint_epoch_%s.pdparams' % state['epoch']))
 
 
 class AverageMeter(object):

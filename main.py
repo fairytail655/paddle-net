@@ -150,7 +150,7 @@ def main():
     #             logging.error("no checkpoint found at '%s'", args.resume)
 
         # Train Parameters Load
-        train_param = getattr(model, 'train_param', {})
+        train_config = getattr(model, 'train_config', {})
         if 'epochs' in train_param:
             epochs = train_param['epochs']
         else:
@@ -271,16 +271,16 @@ def main():
                                     train_loss=train_loss, val_loss=val_loss, 
                                     train_prec1=train_prec, val_prec1=val_prec))
 
-    #             results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
-    #                         train_error1=100 - train_prec, val_error1=100 - val_prec)
-    #             results.save()
+                results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
+                            train_prec=train_prec, val_prec=val_prec)
+                results.save()
 
-    #             # update progressor
-    #             progress.update(task1, advance=1, refresh=True)
+                # update progressor
+                progress.update(task1, advance=1, refresh=True)
 
-    #     logging.info('----------------------------------------------------------------\n'
-    #                 'Whole Cost Time: {2:.2f}s      Best Validation Prec {val_prec1:.3f}'
-    #                 '-----------------------------------------------------------------'.format(time.time()-begin, best_prec))
+        logging.info('----------------------------------------------------------------\n'
+                    'Whole Cost Time: {2:.2f}s      Best Validation Prec {val_prec1:.3f}'
+                    '-----------------------------------------------------------------'.format(time.time()-begin, best_prec))
         
     #     epochs = list(range(args.epochs))
     #     draw2(epochs, train_loss_list, val_loss_list, train_prec_list, val_prec_list)
@@ -339,11 +339,11 @@ def train(data_loader, model, criterion, epoch, optimizer):
     return forward(data_loader, model, criterion, epoch,
                     training=True, optimizer=optimizer)
 
-    def validate(data_loader, model, criterion, epoch):
-        # switch to evaluate mode
-        model.eval()
-        return forward(data_loader, model, criterion, epoch,
-                       training=False, optimizer=None)
+def validate(data_loader, model, criterion, epoch):
+    # switch to evaluate mode
+    model.eval()
+    return forward(data_loader, model, criterion, epoch,
+                    training=False, optimizer=None)
 
 if __name__ == '__main__':
     main()

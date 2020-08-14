@@ -64,7 +64,7 @@ class ResNet(Layer):
         self.fc = Linear(64, num_classes)
 
         # init_model(self)
-        self.train_param = {
+        self.train_config = {
             'epochs': 1,
             'batch_size': 128,
             'regime': {
