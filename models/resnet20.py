@@ -65,8 +65,8 @@ class ResNet(Layer):
 
         # init_model(self)
         self.train_config = {
-            'epochs': 250,
-            'batch_size': 128,
+            'epochs': 300,
+            'batch_size': 256,
             'opt_config': {
                 'optimizer': 'Momentum',
                 'learning_rate': {
