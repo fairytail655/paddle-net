@@ -1,5 +1,5 @@
 import os
-import logging
+# import logging
 import paddle
 import shutil
 import pandas as pd
@@ -8,27 +8,32 @@ import json
 from bokeh.io import output_file, save, show
 from bokeh.plotting import figure
 from bokeh.layouts import column
+import time
 #from bokeh.charts import Line, defaults
 #
 #defaults.width = 800
 #defaults.height = 400
 #defaults.tools = 'pan,box_zoom,wheel_zoom,box_select,hover,resize,reset,save'
 
+class MyLogging(object):
 
-def setup_logging(log_file='log.txt'):
-    """Setup logging configuration
-    """
-    # create logger
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    # create hander
-    hander = logging.FileHandler(log_file, mode='w')
-    hander.setLevel(logging.INFO)
-    # define output format
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s : %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-    hander.setFormatter(formatter)
-    # add hander
-    logger.addHandler(hander)
+    def __init__(self, log_file='./log.txt'):
+        self.log_file = log_file
+        with open(self.log_file, 'w') as f:
+            f.write("")
+
+    def info(self, message):
+        date = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) 
+        message = "[{}] - INFO: {}\n".format(date, message)
+        print(message, end='')
+        with open(self.log_file, 'a') as f:
+            f.write(message)
+
+    def debug(self, message):
+        date = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) 
+        message = "[{}] - DEBUG: {}\n".format(date, message)
+        with open(self.log_file, 'a') as f:
+            f.write(message)
 
 class ResultsLog(object):
 

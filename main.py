@@ -1,7 +1,6 @@
 import argparse
 import os
 import time
-import logging
 import models
 import math
 # from preprocess import get_transform
@@ -65,6 +64,7 @@ parser.add_argument('-e', '--evaluate', type=str, metavar='FILE',
                     help='evaluate model FILE on validation set')
 
 def main():
+    global my_logging
     global args, best_prec
     global progress, task2, task3
     global input_size, in_dim, target_size
@@ -80,12 +80,12 @@ def main():
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    setup_logging(os.path.join(save_path, 'log.txt'))
+    my_logging = MyLogging(os.path.join(save_path, 'log.txt'))
     results_file = os.path.join(save_path, 'results.%s')
     results = ResultsLog(results_file % 'csv', results_file % 'html')
 
-    logging.info("saving to %s", save_path)
-    logging.info("run arguments: %s", args)
+    my_logging.info("saving to {}".format(save_path))
+    my_logging.info("run arguments: {}".format(args))
 
 #     if 'cuda' in args.type:
 #         args.gpus = [int(i) for i in args.gpus.split(',')]
@@ -95,7 +95,7 @@ def main():
 #         args.gpus = None
 
     # create model
-    logging.info("creating model %s", args.model)
+    my_logging.info("creating model {}".format(args.model))
     model = models.__dict__[args.model]
     model_config = {'dataset': args.dataset}
 
@@ -125,7 +125,7 @@ def main():
     with fluid.dygraph.guard(device):
 
         model = model(**model_config)
-        logging.info("created model with configuration: %s", model_config)
+        my_logging.info("created model with configuration: {}".format(model_config))
 
     #     # optionally resume from a checkpoint
     #     if args.evaluate:
@@ -133,7 +133,7 @@ def main():
     #             parser.error('invalid checkpoint: {}'.format(args.evaluate))
     #         checkpoint = torch.load(args.evaluate)
     #         model.load_state_dict(checkpoint['state_dict'])
-    #         logging.info("loaded checkpoint '%s' (epoch %s)",
+    #         my_logging.info("loaded checkpoint '%s' (epoch %s)",
     #                      args.evaluate, checkpoint['epoch'])
     #     elif args.resume:
     #         checkpoint_file = args.resume
@@ -142,15 +142,15 @@ def main():
     #         #     checkpoint_file = os.path.join(
     #         #         checkpoint_file, 'checkpoint.pth.tar')
     #         if os.path.isfile(checkpoint_file):
-    #             logging.info("loading checkpoint '%s'", args.resume)
+    #             my_logging.info("loading checkpoint '%s'", args.resume)
     #             checkpoint = torch.load(checkpoint_file)
     #             args.start_epoch = checkpoint['epoch'] - 1
     #             best_prec = checkpoint['best_prec']
     #             model.load_state_dict(checkpoint['state_dict'])
-    #             logging.info("loaded checkpoint '%s' (epoch %s)",
+    #             my_logging.info("loaded checkpoint '%s' (epoch %s)",
     #                          checkpoint_file, checkpoint['epoch'])
     #         else:
-    #             logging.error("no checkpoint found at '%s'", args.resume)
+    #             my_logging.error("no checkpoint found at '%s'", args.resume)
 
         # Train Parameters Load
         train_config = getattr(model, 'train_config', {})
@@ -176,7 +176,7 @@ def main():
             criterion = train_config['criterion']
         else:
             criterion = fluid.layers.softmax_with_cross_entropy
-        logging.info("\n----------------------------------------------\n"
+        my_logging.info("\n----------------------------------------------\n"
                      "epochs: {}\tbatch_size: {}\n"
                      "regime: {}\n"
                      "transform: {}\n"
@@ -189,14 +189,14 @@ def main():
         train_data = get_dataset(args.dataset, 'train', transform['train'])
         train_len = len(list(train_data()))
         train_loader = paddle.batch(paddle.reader.shuffle(train_data, train_len),
-                                    batch_size=batch_size)()
-        logging.info('train dataset size: %d', train_len)
+                                    batch_size=batch_size)
+        my_logging.info('train dataset size: {}'.format(train_len))
 
         val_data = get_dataset(args.dataset, 'eval', transform['eval'])
         val_len = len(list(val_data()))
         val_loader = paddle.batch(paddle.reader.shuffle(val_data, val_len),
-                                    batch_size=batch_size)()
-        logging.info('val dataset size: %d', val_len)
+                                    batch_size=batch_size)
+        my_logging.info('val dataset size: {}'.format(val_len))
 
     #     if args.evaluate:
     #         with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
@@ -206,7 +206,7 @@ def main():
     #                     auto_refresh=False) as progress:
     #             task3 = progress.add_task("[yellow]validating:", total=math.ceil(len(val_data)/args.batch_size))
     #             val_loss, val_prec1 = validate(val_loader, model, criterion, 0)
-    #             logging.info('Evaluate {0}\t'
+    #             my_logging.info('Evaluate {0}\t'
     #                         'Validation Loss {val_loss:.4f} \t'
     #                         'Validation Prec@1 {val_prec1:.3f} \t'
     #                         .format(args.evaluate, val_loss=val_loss, val_prec1=val_prec1))
@@ -264,7 +264,7 @@ def main():
                               'best_prec': best_prec,
                               'regime': regime }
                 save_checkpoint(model_dict, train_dict, is_best, path=save_path)
-                # logging.info('\n----------------------------------------------\n'
+                # my_logging.info('\n----------------------------------------------\n'
                 #             'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
                 #             'Training Loss {train_loss:.4f} \t'
                 #             'Training Prec {train_prec1:.3f} \t'
@@ -282,7 +282,7 @@ def main():
                 # update progressor
                 progress.update(task1, advance=1, refresh=True)
 
-        logging.info('\n----------------------------------------------------------------\n'
+        my_logging.info('\n----------------------------------------------------------------\n'
                     'Whole Cost Time: {0:.2f}s      Best Validation Prec {1:.3f}\n'
                     '-----------------------------------------------------------------'.format(time.time()-begin, best_prec))
         
@@ -297,7 +297,7 @@ def forward(data_loader, model, criterion, epoch=0, training=True, optimizer=Non
 
     start = time.time()
 
-    for i, data in enumerate(data_loader):
+    for i, data in enumerate(data_loader()):
         # measure data loading time
         data_time.update(time.time() - start)
         # load inputs and target
