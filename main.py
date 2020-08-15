@@ -224,7 +224,7 @@ def main():
                         "[progress.percentage]{task.percentage:>3.0f}%",
                         TimeRemainingColumn(),
                         auto_refresh=False) as progress:
-                task3 = progress.add_task("[yellow]validating:", total=math.ceil(val_len/args.batch_size))
+                task3 = progress.add_task("[yellow]validating:", total=math.ceil(val_len/batch_size))
                 val_loss, val_prec1 = validate(val_loader, model, criterion, 0)
                 my_logging.info('Evaluate {0}\t'
                             'Validation Loss {val_loss:.4f} \t'
@@ -243,8 +243,8 @@ def main():
                       TimeRemainingColumn(),
                       auto_refresh=False) as progress:
             task1 = progress.add_task("[red]epoch:", total=epochs)
-            task2 = progress.add_task("[blue]train:", total=math.ceil(train_len/args.batch_size))
-            task3 = progress.add_task("[yellow]validate:", total=math.ceil(val_len/args.batch_size))
+            task2 = progress.add_task("[blue]train:", total=math.ceil(train_len/batch_size))
+            task3 = progress.add_task("[yellow]validate:", total=math.ceil(val_len/batch_size))
 
             for i in range(args.start_epoch):
                 progress.update(task1, advance=1, refresh=True)
@@ -281,7 +281,7 @@ def main():
                 save_checkpoint(model_dict, train_dict, is_best, path=save_path)
                 my_logging.debug('\n----------------------------------------------\n'
                             'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
-                            'current_lr: {}\t'
+                            'current_lr: {3}\t'
                             'Training Loss {train_loss:.4f} \t'
                             'Training Prec {train_prec:.3f} \t'
                             'Validation Loss {val_loss:.4f} \t'

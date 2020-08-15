@@ -25,13 +25,16 @@ import pandas as pd
 #         lr = adam.current_step_lr()
 #         print("{} : {}".format(i, lr))
 
-# with fluid.dygraph.guard():
+with fluid.dygraph.guard():
 
-a = "C:\\Users\\26235\\Desktop\\code\\python\\paddle-net\\results\\resnet20\\results.csv"
+    adam = fluid.optimizer.AdamOptimizer()
+    print(adam.current_step_lr())
+
+# a = "C:\\Users\\26235\\Desktop\\code\\python\\paddle-net\\results\\resnet20\\results.csv"
 #     b = os.path.splitext(a)[0]
 #     model_dict, opt_dict = fluid.dygraph.load_dygraph(b)
 #     net = resnet20()
 #     net.load_dict(model_dict)
-b = pd.read_csv(a)
-c = pd.DataFrame()
-print(b)
+# b = pd.read_csv(a)
+# c = pd.DataFrame()
+# print(b)
