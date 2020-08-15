@@ -204,13 +204,6 @@ def main():
                      .format(epochs, batch_size, opt_config, transform, criterion.__name__)
         )
 
-        # Data loading code
-        train_data = get_dataset(args.dataset, 'train', transform['train'])
-        train_len = len(list(train_data()))
-        train_loader = paddle.batch(paddle.reader.shuffle(train_data, train_len),
-                                    batch_size=batch_size)
-        my_logging.info('train dataset size: {}'.format(train_len))
-
         val_data = get_dataset(args.dataset, 'eval', transform['eval'])
         val_len = len(list(val_data()))
         val_loader = paddle.batch(paddle.reader.shuffle(val_data, val_len),
@@ -230,6 +223,12 @@ def main():
                             'Validation Prec@1 {val_prec1:.3f} \t'
                             .format(args.evaluate, val_loss=val_loss, val_prec1=val_prec1))
             return
+
+        train_data = get_dataset(args.dataset, 'train', transform['train'])
+        train_len = len(list(train_data()))
+        train_loader = paddle.batch(paddle.reader.shuffle(train_data, train_len),
+                                    batch_size=batch_size)
+        my_logging.info('train dataset size: {}'.format(train_len))
 
         # # restore results
         # train_loss_list, train_prec_list = [], []

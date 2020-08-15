@@ -9,32 +9,15 @@ from utils import *
 import time
 import pandas as pd
 
-# with fluid.dygraph.guard():
-#     bo = [2, 3, 5]
-#     val = [1e-1, 1e-2, 1e-3, 1]
-#     a = fluid.dygraph.PiecewiseDecay(bo, val, 0)
-#     linear = fluid.dygraph.Linear(3, 1)
-#     adam = fluid.optimizer.Adam(a, parameter_list=linear.parameters())
-#     inputs = np.random.rand(3).astype("float32")
-#     inputs = fluid.dygraph.to_variable(inputs)
-#     output = linear(inputs)
-#     loss = fluid.layers.reduce_mean(output)
+from visualdl import LogWriter
 
-#     for i in range(7):
-#         adam.minimize(loss)
-#         lr = adam.current_step_lr()
-#         print("{} : {}".format(i, lr))
-
-# with fluid.dygraph.guard():
-
-#     adam = fluid.optimizer.AdamOptimizer()
-#     print(adam.current_step_lr())
-
-# a = "C:\\Users\\26235\\Desktop\\code\\python\\paddle-net\\results\\resnet20\\results.csv"
-#     b = os.path.splitext(a)[0]
-#     model_dict, opt_dict = fluid.dygraph.load_dygraph(b)
-#     net = resnet20()
-#     net.load_dict(model_dict)
-# b = pd.read_csv(a)
-# c = pd.DataFrame()
-# print(b)
+if __name__ == '__main__':
+    value = [i/1000.0 for i in range(1000)]
+    # 初始化一个记录器
+    with LogWriter(logdir="./log/scalar_test/train") as writer:
+        for step in range(500):
+            # 向记录器添加一个tag为`acc`的数据
+            writer.add_scalar(tag="acc", step=step, value=value[step])
+            # 向记录器添加一个tag为`loss`的数据
+            writer.add_scalar(tag="loss", step=step, value=1/(value[step] + 1))
+            sleep(1)
