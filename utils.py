@@ -124,23 +124,22 @@ __optimizers = {
 }
 
 
-def adjust_optimizer(optimizer, epoch, config):
-    """Reconfigures the optimizer according to epoch and config dict"""
-    def modify_optimizer(optimizer, setting):
-        if 'optimizer' in setting:
-            optimizer = __optimizers[setting['optimizer']](
-                optimizer.param_groups)
-        for param_group in optimizer.param_groups:
-            for key in param_group.keys():
-                if key in setting:
-                    param_group[key] = setting[key]
-        return optimizer
+def get_optimizer(start_epoch, opt_config, model):
+    """Reconfigures the optimizer according to config dict"""
+    optimizer = __optimizers[opt_config['optimizer']]
+    opt_params = {'parameter_list': model.parameters()}
+    for key in opt_config.keys():
+        if key == 'learning_rate':
+            lr = opt_config[key]
+            decay_lr = fluid.dygraph.PiecewiseDecay(lr['bound'], lr['value'], start_epoch)
+            opt_params['learning_rate'] = decay_lr
+        elif key == 'weight_decay':
+            regularization = fluid.regularizer.L2Decay(regularization_coeff=opt_config[key])
+            opt_params['regularization'] = regularization
+        elif key == 'momentum':
+            opt_params['momentum'] = opt_config[key]
 
-        for e in range(epoch + 1):  # run over all epochs - sticky setting
-            if e in config:
-                optimizer = modify_optimizer(optimizer, config[e])
-
-    return optimizer
+    return optimizer(**opt_params)
 
 
 # def accuracy(output, target):

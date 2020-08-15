@@ -67,12 +67,19 @@ class ResNet(Layer):
         self.train_config = {
             'epochs': 250,
             'batch_size': 128,
-            'regime': {
-                0: {'optimizer': 'SGD', 'lr': 1e-1,
-                    'weight_decay': 1e-4, 'momentum': 0.9},
-                81: {'lr': 1e-2},
-                122: {'lr': 1e-3, 'weight_decay': 0},
-                164: {'lr': 1e-4}
+            'opt_config': {
+                'optimizer': 'Momentum',
+                'learning_rate': {
+                    'bound': [81, 122, 164],
+                    'value': [1e-1, 1e-2, 1e-3, 1e-4]
+                },
+                'weight_decay': 1e-4,
+                'momentum': 0.9,
+                # 0: {, 'lr': 1e-1,
+                #     'weight_decay': 1e-4, 'momentum': 0.9},
+                # 81: {'lr': 1e-2},
+                # 122: {'lr': 1e-3, 'weight_decay': 0},
+                # 164: {'lr': 1e-4}
             },
             'transform': {
                 'train': None,

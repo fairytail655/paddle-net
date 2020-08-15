@@ -152,37 +152,46 @@ def main():
     #         else:
     #             my_logging.error("no checkpoint found at '%s'", args.resume)
 
-        # Train Parameters Load
+        # Train Config Load
         train_config = getattr(model, 'train_config', {})
         if 'epochs' in train_config:
             epochs = train_config['epochs']
         else:
             epochs = args.epochs
+
         if 'batch_size' in train_config:
             batch_size = train_config['batch_size']
         else:
             batch_size = args.batch_size
-        if 'regime' in train_config:
-            regime = train_config['regime']
+
+        if 'opt_config' in train_config:
+            opt_config = train_config['opt_config']
         else:
-            regime = {0: {'optimizer': args.optimizer, 
-                           'lr': args.lr, 'momentum': args.momentum, 
-                           'weight_decay': args.weight_decay}}
+            opt_config = { 'optimizer': 'SGD',
+                           'learning_rate': {
+                           'bound': [],
+                           'value': [args.lr]
+                           }
+            }
+        optimizer = get_optimizer(args.start_epoch, opt_config, model)
+
         if 'transform' in train_config:
             transform = train_config['transform']
         else:
             transform = {'train': None, 'eval': None}
+
         if 'criterion' in train_config:
             criterion = train_config['criterion']
         else:
             criterion = fluid.layers.softmax_with_cross_entropy
+
         my_logging.info("\n----------------------------------------------\n"
                      "epochs: {}\tbatch_size: {}\n"
-                     "regime: {}\n"
+                     "opt_config: {}\n"
                      "transform: {}\n"
                      "criterion: {}\n"
                      "----------------------------------------------"
-                     .format(epochs, batch_size, regime, transform, criterion.__name__)
+                     .format(epochs, batch_size, opt_config, transform, criterion.__name__)
         )
 
         # Data loading code
@@ -212,13 +221,9 @@ def main():
     #                         .format(args.evaluate, val_loss=val_loss, val_prec1=val_prec1))
     #         return
 
-
         # # restore results
         # train_loss_list, train_prec_list = [], []
         # val_loss_list, val_prec_list = [], []
-
-        optimizer = fluid.optimizer.SGDOptimizer(learning_rate=args.lr, 
-                                                 parameter_list=model.parameters())
 
         # print progressor
         with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
@@ -239,15 +244,15 @@ def main():
                 # optimizer = adjust_optimizer(optimizer, epoch, regime)
 
                 # train for one epoch
-                # train_loss, train_prec = train(
-                #     train_loader, model, criterion, epoch, optimizer)
+                train_loss, train_prec = train(
+                    train_loader, model, criterion, epoch, optimizer)
 
                 # train_loss_list.append(train_loss)
                 # train_prec_list.append(train_prec)
 
                 # evaluate on validation set
-                # val_loss, val_prec = validate(
-                #     val_loader, model, criterion, epoch)
+                val_loss, val_prec = validate(
+                    val_loader, model, criterion, epoch)
 
                 # val_loss_list.append(val_loss)
                 # val_prec_list.append(val_prec)
@@ -262,22 +267,23 @@ def main():
                               'model': args.model,
                               'config': model_config,
                               'best_prec': best_prec,
-                              'regime': regime }
+                              'opt_config': opt_config 
+                }
                 save_checkpoint(model_dict, train_dict, is_best, path=save_path)
-                # my_logging.info('\n----------------------------------------------\n'
-                #             'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
-                #             'Training Loss {train_loss:.4f} \t'
-                #             'Training Prec {train_prec1:.3f} \t'
-                #             'Validation Loss {val_loss:.4f} \t'
-                #             'Validation Prec {val_prec1:.3f} \n'
-                #             '----------------------------------------------'
-                #             .format(epoch + 1, args.epochs, time.time()-start,
-                #                     train_loss=train_loss, val_loss=val_loss, 
-                #                     train_prec1=train_prec, val_prec1=val_prec))
+                my_logging.debug('\n----------------------------------------------\n'
+                            'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
+                            'Training Loss {train_loss:.4f} \t'
+                            'Training Prec {train_prec1:.3f} \t'
+                            'Validation Loss {val_loss:.4f} \t'
+                            'Validation Prec {val_prec1:.3f} \n'
+                            '----------------------------------------------'
+                            .format(epoch + 1, args.epochs, time.time()-start,
+                                    train_loss=train_loss, val_loss=val_loss, 
+                                    train_prec1=train_prec, val_prec1=val_prec))
 
-                # results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
-                #             train_prec=train_prec, val_prec=val_prec)
-                # results.save()
+                results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
+                            train_prec=train_prec, val_prec=val_prec)
+                results.save()
 
                 # update progressor
                 progress.update(task1, advance=1, refresh=True)
