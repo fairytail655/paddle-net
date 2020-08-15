@@ -4,6 +4,7 @@ import paddle
 import shutil
 import pandas as pd
 import paddle.fluid as fluid
+import json
 from bokeh.io import output_file, save, show
 from bokeh.plotting import figure
 from bokeh.layouts import column
@@ -74,20 +75,23 @@ class ResultsLog(object):
         self.figures.append(fig)
 
 
-def save_checkpoint(model_dict, state, is_best, path='.', filename='checkpoint', save_all=False):
+def save_checkpoint(model_dict, train_dict, is_best, path='.', filename='checkpoint', save_all=False):
     state_dict = model_dict.copy()
-    state_dict['epoch'] = state['epoch']
-    state_dict['model'] = state['model']
-    state_dict['config'] = state['config']
-    state_dict['best_prec'] = state['best_prec']
-    state_dict['regime'] = state['regime']
+    # save model dict
     filename = os.path.join(path, filename)
     fluid.dygraph.save_dygraph(state_dict, filename)
+    # save train dict
+    temp = json.dumps(train_dict, sort_keys=True, indent=4)
+    with open(filename+'.json', 'w') as f:
+        f.write(temp)
     if is_best:
         shutil.copyfile(filename+'.pdparams', os.path.join(path, 'best_model.pdparams'))
+        shutil.copyfile(filename+'.json', os.path.join(path, 'best_model.json'))
     if save_all:
         shutil.copyfile(filename+'.pdparams', os.path.join(
-            path, 'checkpoint_epoch_%s.pdparams' % state['epoch']))
+            path, 'checkpoint_epoch_%s.pdparams' % train_dict['epoch']))
+        shutil.copyfile(filename+'.json', os.path.join(
+            path, 'checkpoint_epoch_%s.json' % train_dict['epoch']))
 
 
 class AverageMeter(object):
