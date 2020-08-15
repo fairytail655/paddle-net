@@ -41,14 +41,11 @@ class ResultsLog(object):
         self.path = path
         self.plot_path = plot_path or (self.path + '.html')
         self.figures = []
-        self.results = None
+        self.results = pd.DataFrame()
 
     def add(self, **kwargs):
         df = pd.DataFrame([kwargs.values()], columns=kwargs.keys())
-        if self.results is None:
-            self.results = df
-        else:
-            self.results = self.results.append(df, ignore_index=True)
+        self.results = self.results.append(df, ignore_index=True)
 
     def save(self, title='Training Results'):
         if len(self.figures) > 0:
@@ -62,8 +59,10 @@ class ResultsLog(object):
 
     def load(self, path=None):
         path = path or self.path
+        # if self.results is None:
+        #     self.results = pd.DataFrame([kwargs.values()], columns=kwargs.keys())
         if os.path.isfile(path):
-            self.results.read_csv(path)
+            self.results = pd.read_csv(path)
 
     def show(self):
         if len(self.figures) > 0:

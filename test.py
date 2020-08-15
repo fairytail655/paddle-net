@@ -7,6 +7,7 @@ import collections
 import json
 from utils import *
 import time
+import pandas as pd
 
 # with fluid.dygraph.guard():
 #     bo = [2, 3, 5]
@@ -24,7 +25,13 @@ import time
 #         lr = adam.current_step_lr()
 #         print("{} : {}".format(i, lr))
 
-a = {'0': 0, '1': 1, '2': 2}
-b = {**a, '3': 3}
-# b = a.pop('0')
+# with fluid.dygraph.guard():
+
+a = "C:\\Users\\26235\\Desktop\\code\\python\\paddle-net\\results\\resnet20\\results.csv"
+#     b = os.path.splitext(a)[0]
+#     model_dict, opt_dict = fluid.dygraph.load_dygraph(b)
+#     net = resnet20()
+#     net.load_dict(model_dict)
+b = pd.read_csv(a)
+c = pd.DataFrame()
 print(b)

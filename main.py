@@ -38,10 +38,12 @@ parser.add_argument('--model', '-a', metavar='MODEL', default='resnet20',
 #                     help='additional architecture configuration')
 # parser.add_argument('--type', default='torch.cuda.FloatTensor',
 #                     help='type of tensor - e.g torch.cuda.HalfTensor')
-# parser.add_argument('--gpus', default='0',
+# parser.add_argument('--gpu', default='0',
 #                     help='gpus used for training - e.g 0(none),1')
 # parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
 #                     help='number of data loading workers (default: 8)')
+parser.add_argument('--device', default='CPU', type=str, metavar='OPT',
+                    help='choose to use CPU or GPU')
 parser.add_argument('--epochs', default=300, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
@@ -87,13 +89,6 @@ def main():
     my_logging.info("saving to {}".format(save_path))
     my_logging.info("run arguments: {}".format(args))
 
-#     if 'cuda' in args.type:
-#         args.gpus = [int(i) for i in args.gpus.split(',')]
-#         torch.cuda.set_device(args.gpus[0])
-#         cudnn.benchmark = True
-#     else:
-#         args.gpus = None
-
     # create model
     my_logging.info("creating model {}".format(args.model))
     model = models.__dict__[args.model]
@@ -119,38 +114,54 @@ def main():
     fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
                                   target_vars=[predict], executor=exe, params_filename='__params__')
 
-    device = fluid.CUDAPlace(0)
-    # device = fluid.CPUPlace()
+    if args.device.upper() == 'GPU': 
+        device = fluid.CUDAPlace(0)
+    else:
+        device = fluid.CPUPlace()
 
     with fluid.dygraph.guard(device):
 
         model = model(**model_config)
         my_logging.info("created model with configuration: {}".format(model_config))
 
-    #     # optionally resume from a checkpoint
-    #     if args.evaluate:
-    #         if not os.path.isfile(args.evaluate):
-    #             parser.error('invalid checkpoint: {}'.format(args.evaluate))
-    #         checkpoint = torch.load(args.evaluate)
-    #         model.load_state_dict(checkpoint['state_dict'])
-    #         my_logging.info("loaded checkpoint '%s' (epoch %s)",
-    #                      args.evaluate, checkpoint['epoch'])
-    #     elif args.resume:
-    #         checkpoint_file = args.resume
-    #         # if os.path.isdir(checkpoint_file):
-    #         #     results.load(os.path.join(checkpoint_file, 'results.csv'))
-    #         #     checkpoint_file = os.path.join(
-    #         #         checkpoint_file, 'checkpoint.pth.tar')
-    #         if os.path.isfile(checkpoint_file):
-    #             my_logging.info("loading checkpoint '%s'", args.resume)
-    #             checkpoint = torch.load(checkpoint_file)
-    #             args.start_epoch = checkpoint['epoch'] - 1
-    #             best_prec = checkpoint['best_prec']
-    #             model.load_state_dict(checkpoint['state_dict'])
-    #             my_logging.info("loaded checkpoint '%s' (epoch %s)",
-    #                          checkpoint_file, checkpoint['epoch'])
-    #         else:
-    #             my_logging.error("no checkpoint found at '%s'", args.resume)
+        # optionally resume from a checkpoint
+        if args.evaluate:
+            if not os.path.isfile(args.evaluate):
+                parser.error('invalid checkpoint: {}'.format(args.evaluate))
+            filename = os.path.splitext(args.evaluate)[0]
+            train_file = filename + '.json'
+            if not os.path.isfile(train_file):
+                parser.error('missing file: {}'.format(train_file))
+            with open(train_file, 'r') as f:
+                train_conf = json.load(f)
+            model_dict, opt_dict = fluid.dygraph.load_dygraph(filename)
+            model.load_dict(model_dict)
+            my_logging.info("loaded checkpoint '{}' (epoch {})"
+                            .format( args.evaluate, train_conf['epoch']))
+
+        elif args.resume:
+            checkpoint_dir = args.resume
+            if os.path.isdir(checkpoint_dir):
+                results.load(os.path.join(checkpoint_dir, 'results.csv'))
+                checkpoint = os.path.join(
+                    checkpoint_dir, 'checkpoint')
+            else:
+                parser.error('invalid checkpoint dir: {}'.format(checkpoint_dir))
+            if os.path.isfile(checkpoint+'.pdparams'):
+                my_logging.info("loading checkpoint '{}'".format(checkpoint+'.pdparams'))
+                model_dict, opt_dict = fluid.dygraph.load_dygraph(checkpoint)
+                model.load_dict(model_dict)
+                train_file = checkpoint + '.json'
+                if not os.path.isfile(train_file):
+                    parser.error('missing file: {}'.format(train_file))
+                with open(train_file, 'r') as f:
+                    train_conf = json.load(f)
+                args.start_epoch = train_conf['epoch']
+                best_prec = train_conf['best_prec']
+                my_logging.info("loaded checkpoint '{}' (epoch {})"
+                                .format(checkpoint+'.params', train_conf['epoch']))
+            else:
+                parser.error('no checkpoint found: {}'.format(checkpoint+'.pdparams'))
 
         # Train Config Load
         train_config = getattr(model, 'train_config', {})
@@ -207,19 +218,19 @@ def main():
                                     batch_size=batch_size)
         my_logging.info('val dataset size: {}'.format(val_len))
 
-    #     if args.evaluate:
-    #         with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
-    #                     BarColumn(),
-    #                     "[progress.percentage]{task.percentage:>3.0f}%",
-    #                     TimeRemainingColumn(),
-    #                     auto_refresh=False) as progress:
-    #             task3 = progress.add_task("[yellow]validating:", total=math.ceil(len(val_data)/args.batch_size))
-    #             val_loss, val_prec1 = validate(val_loader, model, criterion, 0)
-    #             my_logging.info('Evaluate {0}\t'
-    #                         'Validation Loss {val_loss:.4f} \t'
-    #                         'Validation Prec@1 {val_prec1:.3f} \t'
-    #                         .format(args.evaluate, val_loss=val_loss, val_prec1=val_prec1))
-    #         return
+        if args.evaluate:
+            with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
+                        BarColumn(),
+                        "[progress.percentage]{task.percentage:>3.0f}%",
+                        TimeRemainingColumn(),
+                        auto_refresh=False) as progress:
+                task3 = progress.add_task("[yellow]validating:", total=math.ceil(val_len/args.batch_size))
+                val_loss, val_prec1 = validate(val_loader, model, criterion, 0)
+                my_logging.info('Evaluate {0}\t'
+                            'Validation Loss {val_loss:.4f} \t'
+                            'Validation Prec@1 {val_prec1:.3f} \t'
+                            .format(args.evaluate, val_loss=val_loss, val_prec1=val_prec1))
+            return
 
         # # restore results
         # train_loss_list, train_prec_list = [], []
@@ -241,7 +252,6 @@ def main():
             begin = time.time()
             for epoch in range(args.start_epoch, epochs):
                 start = time.time()
-                # optimizer = adjust_optimizer(optimizer, epoch, regime)
 
                 # train for one epoch
                 train_loss, train_prec = train(
@@ -258,26 +268,26 @@ def main():
                 # val_prec_list.append(val_prec)
 
                 # remember best prec@1 and save checkpoint
-                # is_best = val_prec > best_prec
-                is_best = True
-                # best_prec = max(val_prec, best_prec)
+                # is_best = True
+                is_best = val_prec > best_prec
+                best_prec = max(val_prec, best_prec)
 
                 model_dict = model.state_dict()
                 train_dict = {'epoch': epoch + 1, 
                               'model': args.model,
                               'config': model_config,
                               'best_prec': best_prec,
-                              'opt_config': opt_config 
                 }
                 save_checkpoint(model_dict, train_dict, is_best, path=save_path)
                 my_logging.debug('\n----------------------------------------------\n'
                             'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
+                            'current_lr: {}\t'
                             'Training Loss {train_loss:.4f} \t'
                             'Training Prec {train_prec1:.3f} \t'
                             'Validation Loss {val_loss:.4f} \t'
                             'Validation Prec {val_prec1:.3f} \n'
                             '----------------------------------------------'
-                            .format(epoch + 1, args.epochs, time.time()-start,
+                            .format(epoch + 1, args.epochs, time.time()-start, optimizer.current_step_lr(),
                                     train_loss=train_loss, val_loss=val_loss, 
                                     train_prec1=train_prec, val_prec1=val_prec))
 
