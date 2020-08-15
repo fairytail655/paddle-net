@@ -283,13 +283,13 @@ def main():
                             'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
                             'current_lr: {}\t'
                             'Training Loss {train_loss:.4f} \t'
-                            'Training Prec {train_prec1:.3f} \t'
+                            'Training Prec {train_prec:.3f} \t'
                             'Validation Loss {val_loss:.4f} \t'
-                            'Validation Prec {val_prec1:.3f} \n'
+                            'Validation Prec {val_prec:.3f} \n'
                             '----------------------------------------------'
                             .format(epoch + 1, args.epochs, time.time()-start, optimizer.current_step_lr(),
                                     train_loss=train_loss, val_loss=val_loss, 
-                                    train_prec1=train_prec, val_prec1=val_prec))
+                                    train_prec=train_prec, val_prec=val_prec))
 
                 results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
                             train_prec=train_prec, val_prec=val_prec)
