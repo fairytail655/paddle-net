@@ -123,14 +123,15 @@ __optimizers = {
 }
 
 
-def get_optimizer(start_epoch, opt_config, model):
+def get_optimizer(start_epoch, factor, opt_config, model):
     """Reconfigures the optimizer according to config dict"""
     optimizer = __optimizers[opt_config['optimizer']]
     opt_params = {'parameter_list': model.parameters()}
     for key in opt_config.keys():
         if key == 'learning_rate':
             lr = opt_config[key]
-            decay_lr = fluid.dygraph.PiecewiseDecay(lr['bound'], lr['value'], start_epoch)
+            bo = [val*factor for val in lr['bound']]
+            decay_lr = fluid.dygraph.PiecewiseDecay(bo, lr['value'], start_epoch*factor)
             opt_params['learning_rate'] = decay_lr
         elif key == 'weight_decay':
             regularization = fluid.regularizer.L2Decay(regularization_coeff=opt_config[key])

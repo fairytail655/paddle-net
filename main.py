@@ -184,7 +184,6 @@ def main():
                            'value': [args.lr]
                            }
             }
-        optimizer = get_optimizer(args.start_epoch, opt_config, model)
 
         if 'transform' in train_config:
             transform = train_config['transform']
@@ -235,6 +234,7 @@ def main():
         # # restore results
         # train_loss_list, train_prec_list = [], []
         # val_loss_list, val_prec_list = [], []
+        optimizer = get_optimizer(args.start_epoch, math.ceil(train_len/batch_size), opt_config, model)
 
         # print progressor
         with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
