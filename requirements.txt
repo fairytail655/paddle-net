@@ -1,3 +1,4 @@
 rich
 pandas
 bokeh
+paddlepaddle-gpu==1.8.3.post107

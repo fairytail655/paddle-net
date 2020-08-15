@@ -239,23 +239,22 @@ def main():
                 # optimizer = adjust_optimizer(optimizer, epoch, regime)
 
                 # train for one epoch
-                # train_loss, train_prec = train(
-                #     train_loader, model, criterion, epoch, optimizer)
+                train_loss, train_prec = train(
+                    train_loader, model, criterion, epoch, optimizer)
 
                 # train_loss_list.append(train_loss)
                 # train_prec_list.append(train_prec)
 
                 # evaluate on validation set
-                # val_loss, val_prec = validate(
-                #     val_loader, model, criterion, epoch)
+                val_loss, val_prec = validate(
+                    val_loader, model, criterion, epoch)
 
                 # val_loss_list.append(val_loss)
                 # val_prec_list.append(val_prec)
 
                 # remember best prec@1 and save checkpoint
-                # is_best = val_prec > best_prec
-                is_best = 2 > 1
-                # best_prec = max(val_prec, best_prec)
+                is_best = val_prec > best_prec
+                best_prec = max(val_prec, best_prec)
 
                 model_dict = model.state_dict()
                 state_dict = {'epoch': epoch + 1, 
@@ -275,9 +274,9 @@ def main():
                 #                     train_loss=train_loss, val_loss=val_loss, 
                 #                     train_prec1=train_prec, val_prec1=val_prec))
 
-                # results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
-                #             train_prec=train_prec, val_prec=val_prec)
-                # results.save()
+                results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
+                            train_prec=train_prec, val_prec=val_prec)
+                results.save()
 
                 # update progressor
                 progress.update(task1, advance=1, refresh=True)

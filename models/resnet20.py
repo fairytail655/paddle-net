@@ -65,7 +65,7 @@ class ResNet(Layer):
 
         # init_model(self)
         self.train_config = {
-            'epochs': 1,
+            'epochs': 250,
             'batch_size': 128,
             'regime': {
                 0: {'optimizer': 'SGD', 'lr': 1e-1,
