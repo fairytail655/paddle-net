@@ -119,8 +119,8 @@ def main():
     fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
                                   target_vars=[predict], executor=exe, params_filename='__params__')
 
-    # device = fluid.CUDAPlace(0)
-    device = fluid.CPUPlace()
+    device = fluid.CUDAPlace(0)
+    # device = fluid.CPUPlace()
 
     with fluid.dygraph.guard(device):
 
