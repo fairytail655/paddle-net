@@ -34,5 +34,4 @@ class DrawScalar(Thread):
                 if not self.stop_flag:
                     writer.add_scalar(tag=self.tag+"/acc", step=self.epoch, value=self.value['acc'])
                     writer.add_scalar(tag=self.tag+"/loss", step=self.epoch, value=self.value['loss'])
-                    print("haha")
         print("DrawScalar exited...")
