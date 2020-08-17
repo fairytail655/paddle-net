@@ -54,23 +54,24 @@ class ResNet(Layer):
     def __init__(self, num_classes=10, in_dim=3):
         super(ResNet, self).__init__()
         self.inplanes = 16
-        self.conv1 = conv3x3(in_dim, self.inplanes, 1)
+        self.inflate = 4
+        self.conv1 = conv3x3(in_dim, self.inplanes*self.inflate, 1)
         self.bn1 = norm_layer(self.inplanes)
         self.relu1 = act_layer
-        self.layer1 = self._make_layer(BasicBlock, 16, 3)
-        self.layer2 = self._make_layer(BasicBlock, 32, 3, stride=2)
-        self.layer3 = self._make_layer(BasicBlock, 64, 3, stride=2)
+        self.layer1 = self._make_layer(BasicBlock, 16*self.inflate, 3)
+        self.layer2 = self._make_layer(BasicBlock, 32*self.inflate, 3, stride=2)
+        self.layer3 = self._make_layer(BasicBlock, 64*self.inflate, 3, stride=2)
         self.avgpool = Pool2D(8, pool_type="avg")
-        self.fc = Linear(64, num_classes)
+        self.fc = Linear(64*self.inflate, num_classes)
 
         # init_model(self)
         self.train_config = {
-            'epochs': 300,
+            'epochs': 250,
             'batch_size': 256,
             'opt_config': {
                 'optimizer': 'Momentum',
                 'learning_rate': {
-                    'bound': [81, 122, 164],
+                    'bound': [100, 150, 200],
                     'value': [1e-1, 1e-2, 1e-3, 1e-4]
                 },
                 'weight_decay': 1e-4,
