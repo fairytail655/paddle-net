@@ -1,4 +1,5 @@
 import argparse
+import platform
 import os
 import sys
 import time
@@ -97,9 +98,13 @@ def main():
     model = models.__dict__[args.model]
     model_config = {'dataset': args.dataset}
 
-    if args.device.upper() == 'GPU': 
+    # if args.device.upper() == 'GPU': 
+    #     device = fluid.CUDAPlace(0)
+    # else:
+    #     device = fluid.CPUPlace()
+    if platform.system() == 'Linux':
         device = fluid.CUDAPlace(0)
-    else:
+    else
         device = fluid.CPUPlace()
 
     # save net struct: __model__
