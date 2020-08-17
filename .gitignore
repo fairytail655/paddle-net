@@ -4,4 +4,4 @@ models/__pycache__
 tmp
 .vscode
 .pre_model
-.vl_log
+vl_log
