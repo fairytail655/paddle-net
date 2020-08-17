@@ -97,6 +97,11 @@ def main():
     model = models.__dict__[args.model]
     model_config = {'dataset': args.dataset}
 
+    if args.device.upper() == 'GPU': 
+        device = fluid.CUDAPlace(0)
+    else:
+        device = fluid.CPUPlace()
+
     # save net struct: __model__
     # command: visualdl --model save_path/struct/__model__ --port 8080
     if args.dataset == 'mnist':
@@ -112,15 +117,10 @@ def main():
     image = fluid.layers.data(name='img', shape=[params['batch_size'], in_dim, input_size, input_size], 
                               dtype='float32', append_batch_size=False)
     predict = net(image)
-    exe = fluid.Executor(fluid.CPUPlace())
+    exe = fluid.Executor(device)
     exe.run(fluid.default_startup_program())
     fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
                                   target_vars=[predict], executor=exe, params_filename='__params__')
-
-    if args.device.upper() == 'GPU': 
-        device = fluid.CUDAPlace(0)
-    else:
-        device = fluid.CPUPlace()
 
     with fluid.dygraph.guard(device):
 

@@ -53,10 +53,10 @@ class ResNet(Layer):
 
     def __init__(self, num_classes=10, in_dim=3):
         super(ResNet, self).__init__()
-        self.inplanes = 16
         self.inflate = 4
-        self.conv1 = conv3x3(in_dim, 16*self.inflate, 1)
-        self.bn1 = norm_layer(16*self.inflate)
+        self.inplanes = 16*self.inflate
+        self.conv1 = conv3x3(in_dim, self.inplanes, 1)
+        self.bn1 = norm_layer(self.inplanes)
         self.relu1 = act_layer
         self.layer1 = self._make_layer(BasicBlock, 16*self.inflate, 3)
         self.layer2 = self._make_layer(BasicBlock, 32*self.inflate, 3, stride=2)
