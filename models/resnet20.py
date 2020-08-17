@@ -69,7 +69,7 @@ class ResNet(Layer):
             'epochs': 200,
             'batch_size': 32,
             'opt_config': {
-                'optimizer': 'adam',
+                'optimizer': 'Adam',
                 'learning_rate': {
                     'bound': [80, 120, 160, 180],
                     'value': [1e-3, 1e-4, 1e-5, 5e-6, 1e-6]

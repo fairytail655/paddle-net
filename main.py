@@ -292,7 +292,7 @@ def main():
                 save_checkpoint(model_dict, train_dict, is_best, path=save_path)
                 my_logging.debug('\n----------------------------------------------\n'
                             'Epoch: [{0}/{1}] Cost_Time: {2:.2f}s\t'
-                            'current_lr: {3}\t'
+                            'current_lr: {3:.7f}\t'
                             'Training Loss {train_loss:.4f} \t'
                             'Training Prec {train_prec:.3f} \t'
                             'Validation Loss {val_loss:.4f} \t'
