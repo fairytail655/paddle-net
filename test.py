@@ -12,7 +12,7 @@ from time import sleep
 from visualdl import LogWriter
 import os
 import shutil
-from visualDL import *
+from vl_draw import *
 import sys
 
 # if __name__ == '__main__':
@@ -43,15 +43,14 @@ try:
     for i in range(500):
         train_thread.set_value(i, {'loss': i, 'acc': train_values[i]})
         val_thread.set_value(i, {'loss': i, 'acc': val_values[i]})
-        train_thread.event.set()
-        val_thread.event.set()
-        sleep(0.5)
+        # train_thread.event.set()
+        # val_thread.event.set()
+        sleep(1)
 except KeyboardInterrupt:
     print("Main KeyboardInterrupt....")
-    train_thread.flag = True
-    train_thread.event.set()
-    train_thread.join()
-    val_thread.flag = True
-    val_thread.event.set()
-    val_thread.join()
-    sys.exit(1)
+
+train_thread.stop()
+train_thread.join()
+val_thread.stop()
+val_thread.join()
+sys.exit(1)

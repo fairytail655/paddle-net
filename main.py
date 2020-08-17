@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 import time
 import models
 import math
@@ -13,6 +14,7 @@ from datetime import datetime
 from ast import literal_eval
 from draw import *
 from rich.progress import Progress, BarColumn, TimeRemainingColumn, TextColumn
+from vl_draw import *
 
 
 model_names = sorted(name for name in models.__dict__
@@ -70,6 +72,7 @@ def main():
     global args, best_prec
     global progress, task2, task3
     global input_size, in_dim, target_size
+    global thread_train, thread_val
 
     best_prec = 0
     args = parser.parse_args()
@@ -230,10 +233,13 @@ def main():
                                     batch_size=batch_size)
         my_logging.info('train dataset size: {}'.format(train_len))
 
-        # # restore results
-        # train_loss_list, train_prec_list = [], []
-        # val_loss_list, val_prec_list = [], []
         optimizer = get_optimizer(args.start_epoch, math.ceil(train_len/batch_size), opt_config, model)
+
+        log_path = os.path.join("./vl_log/scalar", args.model)
+        thread_train = DrawScalar(os.path.join(log_path, "train"), args.model)
+        thread_val = DrawScalar(os.path.join(log_path, "val"), args.model)
+        thread_train.start()
+        thread_val.start()
 
         # print progressor
         with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
@@ -293,6 +299,10 @@ def main():
                 results.add(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss,
                             train_prec=train_prec, val_prec=val_prec)
                 results.save()
+
+                # draw visualDL scalar
+                thread_train.set_value(epoch, {'loss': train_loss, 'acc': train_prec})
+                thread_val.set_value(epoch, {'loss': val_loss, 'acc': val_prec})
 
                 # update progressor
                 progress.update(task1, advance=1, refresh=True)
@@ -365,4 +375,12 @@ def validate(data_loader, model, criterion, epoch):
                     training=False, optimizer=None)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Main KeyboardInterrupt....")
+    thread_train.stop()
+    thread_train.join()
+    thread_val.stop()
+    thread_val.join()
+    sys.exit(1)
