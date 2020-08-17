@@ -53,7 +53,7 @@ class ResNet(Layer):
 
     def __init__(self, num_classes=10, in_dim=3):
         super(ResNet, self).__init__()
-        self.inflate = 4
+        self.inflate = 1
         self.inplanes = 16*self.inflate
         self.conv1 = conv3x3(in_dim, self.inplanes, 1)
         self.bn1 = norm_layer(self.inplanes)
@@ -66,13 +66,13 @@ class ResNet(Layer):
 
         # init_model(self)
         self.train_config = {
-            'epochs': 250,
-            'batch_size': 128,
+            'epochs': 200,
+            'batch_size': 32,
             'opt_config': {
-                'optimizer': 'SGD',
+                'optimizer': 'adam',
                 'learning_rate': {
-                    'bound': [30, 100, 180],
-                    'value': [1e-1, 1e-2, 5e-3, 1e-3]
+                    'bound': [80, 120, 160, 180],
+                    'value': [1e-3, 1e-4, 1e-5, 5e-6, 1e-6]
                 },
                 'weight_decay': 1e-4,
                 # 'momentum': 0.9,
