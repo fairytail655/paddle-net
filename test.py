@@ -31,20 +31,27 @@ import sys
 #             writer.add_scalar(tag="resnet20/train/loss", step=step, value=1/(value[step] + 1))
 #             sleep(1)
 
-my_thread = DrawScalar("./vl_log/scalar_test/resnet20", "resnet20/train")
-my_thread = DrawScalar("./vl_log/scalar_test/resnet20", "resnet20/train")
-my_thread.start()
+train_thread = DrawScalar("./vl_log/scalar_test/resnet20/train", "resnet20")
+val_thread = DrawScalar("./vl_log/scalar_test/resnet20/val", "resnet20")
+train_thread.start()
+val_thread.start()
 
-values = [i/1000 for i in range(1000)]
+train_values = [i/1000 for i in range(1,1000)]
+val_values = [1000/i for i in range(1,1000)]
 
 try:
-    for i in range(1000):
-        my_thread.set_value(i, {'loss': i, 'value': values[i]})
-        my_thread.event.set()
+    for i in range(500):
+        train_thread.set_value(i, {'loss': i, 'acc': train_values[i]})
+        val_thread.set_value(i, {'loss': i, 'acc': val_values[i]})
+        train_thread.event.set()
+        val_thread.event.set()
         sleep(0.5)
 except KeyboardInterrupt:
     print("Main KeyboardInterrupt....")
-    my_thread.flag = True
-    my_thread.event.set()
-    my_thread.join()
+    train_thread.flag = True
+    train_thread.event.set()
+    train_thread.join()
+    val_thread.flag = True
+    val_thread.event.set()
+    val_thread.join()
     sys.exit(1)
