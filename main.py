@@ -104,7 +104,7 @@ def main():
     #     device = fluid.CPUPlace()
     if platform.system() == 'Linux':
         device = fluid.CUDAPlace(0)
-    else
+    else:
         device = fluid.CPUPlace()
 
     # save net struct: __model__
