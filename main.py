@@ -236,6 +236,7 @@ def main():
         optimizer = get_optimizer(args.start_epoch, math.ceil(train_len/batch_size), opt_config, model)
 
         log_path = os.path.join("./vl_log/scalar", args.model)
+        my_logging.info('save visualDL scalar log in: {}'.format(log_path))
         thread_train = DrawScalar(os.path.join(log_path, "train"), args.model)
         thread_val = DrawScalar(os.path.join(log_path, "val"), args.model)
         thread_train.start()
