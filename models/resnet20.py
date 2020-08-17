@@ -71,8 +71,8 @@ class ResNet(Layer):
             'opt_config': {
                 'optimizer': 'Momentum',
                 'learning_rate': {
-                    'bound': [100, 150, 200],
-                    'value': [1e-1, 1e-2, 1e-3, 1e-4]
+                    'bound': [50, 100, 180],
+                    'value': [1e-2, 1e-3, 5e-4, 1e-4]
                 },
                 'weight_decay': 1e-4,
                 'momentum': 0.9,
