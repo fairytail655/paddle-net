@@ -72,9 +72,9 @@ class ResNet(Layer):
                 'optimizer': 'SGD',
                 'learning_rate': {
                     'bound': [30, 100, 180],
-                    'value': [1e-2, 1e-3, 5e-4, 1e-4]
+                    'value': [1e-1, 1e-2, 5e-3, 1e-3]
                 },
-                'weight_decay': 0.9,
+                'weight_decay': 1e-4,
                 # 'momentum': 0.9,
                 # 0: {, 'lr': 1e-1,
                 #     'weight_decay': 1e-4, 'momentum': 0.9},
