@@ -67,15 +67,15 @@ class ResNet(Layer):
         # init_model(self)
         self.train_config = {
             'epochs': 250,
-            'batch_size': 256,
+            'batch_size': 128,
             'opt_config': {
-                'optimizer': 'Momentum',
+                'optimizer': 'SGD',
                 'learning_rate': {
                     'bound': [30, 100, 180],
                     'value': [1e-2, 1e-3, 5e-4, 1e-4]
                 },
-                'weight_decay': 1e-4,
-                'momentum': 0.9,
+                'weight_decay': 0.9,
+                # 'momentum': 0.9,
                 # 0: {, 'lr': 1e-1,
                 #     'weight_decay': 1e-4, 'momentum': 0.9},
                 # 81: {'lr': 1e-2},
