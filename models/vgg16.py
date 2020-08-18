@@ -95,6 +95,18 @@ class VGG16(Layer):
         fc_out = self.fc(l2_out)
         return fc_out
 
+def vgg16(**kwargs):
+    datasets = kwargs.get('dataset', 'cifar10')
+    if datasets == 'mnist':
+        num_classes = 10
+        in_dim = 1
+    elif datasets == 'cifar10':
+        num_classes = 10
+        in_dim = 3
+
+    return VGG16(num_classes=num_classes, in_dim=in_dim)
+
+
 # net = VGG16()
 # image = fluid.layers.data(name='image', shape=[1, 3, 32, 32], dtype='float32', append_batch_size=False)
 # predict = net(image)
