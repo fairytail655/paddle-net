@@ -121,6 +121,7 @@ def main():
     params = getattr(net, 'train_config', {'batch_size': args.batch_size})
     image = fluid.layers.data(name='img', shape=[params['batch_size'], in_dim, input_size, input_size], 
                               dtype='float32', append_batch_size=False)
+    print(image)
     predict = net(image)
     exe = fluid.Executor(device)
     exe.run(fluid.default_startup_program())

@@ -62,7 +62,7 @@ class ResNet(Layer):
         self.layer2 = self._make_layer(BasicBlock, 32*self.inflate, 3, stride=2)
         self.layer3 = self._make_layer(BasicBlock, 64*self.inflate, 3, stride=2)
         self.avgpool = Pool2D(8, pool_type="avg")
-        self.fc = Linear(64*self.inflate, num_classes)
+        self.fc = Linear(64*self.inflate, num_classes, bias_attr=False)
 
         # init_model(self)
         self.train_config = {
@@ -142,31 +142,3 @@ def resnet20(**kwargs):
         in_dim = 3
 
     return ResNet(num_classes=num_classes, in_dim=in_dim)
-
-# x = np.random.randn(*[2,3,32,32])
-# x = x.astype('float32')
-# with fluid.dygraph.guard():
-#     # 创建LeNet类的实例，指定模型名称和分类的类别数目
-    # m = ResNet()
-    # x = fluid.dygraph.to_variable(x)
-#     # 通过调用LeNet从基类继承的sublayers()函数，
-#     # 查看LeNet中所包含的子层
-    # c = m(x)
-    # print(c)
-    # print(m.sublayers())
-    # x = fluid.dygraph.to_variable(x)
-    # for item in m.sublayers():
-    #     # item是LeNet类中的一个子层
-    #     # 查看经过子层之后的输出数据形状
-    #     try:
-    #         x = item(x)
-    #     except:
-    #         x = fluid.layers.reshape(x, [x.shape[0], -1])
-    #         x = item(x)
-    #     if len(item.parameters())==2:
-    #         # 查看卷积和全连接层的数据和参数的形状，
-    #         # 其中item.parameters()[0]是权重参数w，item.parameters()[1]是偏置参数b
-    #         print(item.full_name(), x.shape, item.parameters()[0].shape, item.parameters()[1].shape)
-    #     else:
-    #         # 池化层没有参数
-    #         print(item.full_name(), x.shape)
