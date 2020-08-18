@@ -298,7 +298,7 @@ def main():
                             'Validation Loss {val_loss:.4f} \t'
                             'Validation Prec {val_prec:.3f} \n'
                             '----------------------------------------------'
-                            .format(epoch + 1, args.epochs, time.time()-start, optimizer.current_step_lr(),
+                            .format(epoch + 1, epochs, time.time()-start, optimizer.current_step_lr(),
                                     train_loss=train_loss, val_loss=val_loss, 
                                     train_prec=train_prec, val_prec=val_prec))
 
