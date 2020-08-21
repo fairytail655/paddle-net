@@ -133,6 +133,7 @@ def main():
 
         model = model(**model_config)
         my_logging.info("created model with configuration: {}".format(model_config))
+        calculate_params(model, my_logging.info)
 
         # optionally resume from a checkpoint
         if args.evaluate:

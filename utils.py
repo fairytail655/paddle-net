@@ -1,19 +1,12 @@
 import os
-# import logging
 import paddle
 import shutil
 import pandas as pd
 import paddle.fluid as fluid
 import json
-from bokeh.io import output_file, save, show
-from bokeh.plotting import figure
-from bokeh.layouts import column
 import time
-#from bokeh.charts import Line, defaults
-#
-#defaults.width = 800
-#defaults.height = 400
-#defaults.tools = 'pan,box_zoom,wheel_zoom,box_select,hover,resize,reset,save'
+import numpy as np
+from bokeh.io import output_file, save, show
 
 class MyLogging(object):
 
@@ -39,8 +32,6 @@ class ResultsLog(object):
 
     def __init__(self, path='results.csv', plot_path=None):
         self.path = path
-        self.plot_path = plot_path or (self.path + '.html')
-        self.figures = []
         self.results = pd.DataFrame()
 
     def add(self, **kwargs):
@@ -48,36 +39,12 @@ class ResultsLog(object):
         self.results = self.results.append(df, ignore_index=True)
 
     def save(self, title='Training Results'):
-        if len(self.figures) > 0:
-            if os.path.isfile(self.plot_path):
-                os.remove(self.plot_path)
-            output_file(self.plot_path, title=title)
-            plot = column(*self.figures)
-            save(plot)
-            self.figures = []
         self.results.to_csv(self.path, index=False, index_label=False)
 
     def load(self, path=None):
         path = path or self.path
-        # if self.results is None:
-        #     self.results = pd.DataFrame([kwargs.values()], columns=kwargs.keys())
         if os.path.isfile(path):
             self.results = pd.read_csv(path)
-
-    def show(self):
-        if len(self.figures) > 0:
-            plot = column(*self.figures)
-            show(plot)
-
-    #def plot(self, *kargs, **kwargs):
-    #    line = Line(data=self.results, *kargs, **kwargs)
-    #    self.figures.append(line)
-
-    def image(self, *kargs, **kwargs):
-        fig = figure()
-        fig.image(*kargs, **kwargs)
-        self.figures.append(fig)
-
 
 def save_checkpoint(model_dict, train_dict, is_best, path='.', filename='checkpoint', save_all=False):
     state_dict = model_dict.copy()
@@ -97,6 +64,19 @@ def save_checkpoint(model_dict, train_dict, is_best, path='.', filename='checkpo
         shutil.copyfile(filename+'.json', os.path.join(
             path, 'checkpoint_epoch_%s.json' % train_dict['epoch']))
 
+def calculate_params(model, show_fc=print):
+    train_param = 0
+    n_train_param = 0
+    show_fc("===================================================================")
+    for p in model.parameters():
+        if p.trainable:
+            train_param += np.prod(p.shape)
+        else:
+            n_train_param += np.prod(p.shape)
+    total_param = train_param + n_train_param
+    show_fc("total parameters: {} -> {:.2f}MB".format(total_param, total_param*4/1024/1024))
+    show_fc("trainable parameters: {} -> {:.2f}MB".format(train_param, train_param*4/1024/1024))
+    show_fc("===================================================================")
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -140,22 +120,3 @@ def get_optimizer(start_epoch, factor, opt_config, model):
             opt_params['momentum'] = opt_config[key]
 
     return optimizer(**opt_params)
-
-
-# def accuracy(output, target):
-#     """Computes the precision@k for the specified values of k"""
-#     batch_size = target.size(0)
-
-#     _, pred = output.float().topk(1, 1, True, True)
-#     pred = pred.t()
-#     correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-#     correct = correct[:1].view(-1).float().sum(0)
-#     res = correct.mul_(100.0 / batch_size)
-
-#     return res
-
-#     # kernel_img = model.features[0][0].kernel.data.clone()
-#     # kernel_img.add_(-kernel_img.min())
-#     # kernel_img.mul_(255 / kernel_img.max())
-#     # save_image(kernel_img, 'kernel%s.jpg' % epoch)
