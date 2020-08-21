@@ -16,6 +16,7 @@ from ast import literal_eval
 from draw import *
 from rich.progress import Progress, BarColumn, TimeRemainingColumn, TextColumn
 from vl_draw import *
+from time import sleep
 
 
 model_names = sorted(name for name in models.__dict__
@@ -74,6 +75,7 @@ def main():
     global progress, task2, task3
     global input_size, in_dim, target_size
     global thread_train, thread_val
+    global thread_hm
 
     best_prec = 0
     args = parser.parse_args()
@@ -240,12 +242,30 @@ def main():
 
         optimizer = get_optimizer(args.start_epoch, math.ceil(train_len/batch_size), opt_config, model)
 
-        log_path = os.path.join("./vl_log/scalar", args.model)
-        my_logging.info('save visualDL scalar log in: {}'.format(log_path))
-        thread_train = DrawScalar(os.path.join(log_path, "train"), args.model)
-        thread_val = DrawScalar(os.path.join(log_path, "val"), args.model)
+        # visualDL scalar init
+        scalar_path = os.path.join("./vl_log/scalar", args.model)
+        my_logging.info('save visualDL scalar log in: {}'.format(scalar_path))
+        thread_train = DrawScalar(os.path.join(scalar_path, "train"), args.model)
+        thread_val = DrawScalar(os.path.join(scalar_path, "val"), args.model)
         thread_train.start()
         thread_val.start()
+
+        # visualDL histogram init
+        hm_layer_names = [
+                            'features.0.conv.weight',
+                        ]
+        histogram_path = os.path.join("./vl_log/histogram", args.model)
+        my_logging.info('save visualDL histogram log in: {}'.format(histogram_path))
+        thread_hm = {}
+        for name in hm_layer_names:
+            thread_hm[name] = DrawHistogram(histogram_path, name)
+            thread_hm[name].start()
+
+        # first dram visualDL histogram
+        for param in model.named_parameters():
+            if param[0] in hm_layer_names:
+                value = param[1].numpy().reshape(-1)
+                thread_hm[param[0]].set_value(0, value)
 
         # print progressor
         with Progress("[progress.description]{task.description}{task.completed}/{task.total}",
@@ -310,6 +330,12 @@ def main():
                 thread_train.set_value(epoch, {'loss': train_loss, 'acc': train_prec})
                 thread_val.set_value(epoch, {'loss': val_loss, 'acc': val_prec})
 
+                # dram visualDL histogram
+                for param in model.named_parameters():
+                    if param[0] in hm_layer_names:
+                        value = param[1].numpy().reshape(-1)
+                        thread_hm[param[0]].set_value(epoch+1, value)
+
                 # update progressor
                 progress.update(task1, advance=1, refresh=True)
 
@@ -317,9 +343,6 @@ def main():
                     'Whole Cost Time: {0:.2f}s      Best Validation Prec {1:.3f}\n'
                     '-----------------------------------------------------------------'.format(time.time()-begin, best_prec))
         
-    #     epochs = list(range(args.epochs))
-    #     draw2(epochs, train_loss_list, val_loss_list, train_prec_list, val_prec_list)
-
 def forward(data_loader, model, criterion, epoch=0, training=True, optimizer=None):
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -389,4 +412,7 @@ if __name__ == '__main__':
     thread_train.join()
     thread_val.stop()
     thread_val.join()
+    for thread in thread_hm.keys():
+        thread_hm[thread].stop()
+        thread_hm[thread].join()
     sys.exit(1)

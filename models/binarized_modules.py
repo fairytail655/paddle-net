@@ -7,7 +7,6 @@ from torch.autograd import Function
 
 import numpy as np
 
-
 def Binarize(tensor,quant_mode='det'):
     if quant_mode=='det':
         return tensor.sign()

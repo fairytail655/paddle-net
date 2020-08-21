@@ -61,7 +61,7 @@ class VGG16(Layer):
         self.fc = Linear(512, num_classes)
 
         self.train_config = {
-            'epochs': 200,
+            'epochs': 5,
             'batch_size': 256,
             'opt_config': {
                 'optimizer': 'Adam',

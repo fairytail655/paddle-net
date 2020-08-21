@@ -15,42 +15,41 @@ import shutil
 from vl_draw import *
 import sys
 
-# if __name__ == '__main__':
-#     try:
-#         shutil.rmtree("./vl_log/scalar_test/train")
-#     except:
-#         print("haha")
-#     value = [i/1000.0 for i in range(1000)]
-#     # for i in range(1000):
-#     # 初始化一个记录器
-#     with LogWriter(logdir="./vl_log/scalar_test/train") as writer:
-#         for step in range(500):
-#             # 向记录器添加一个tag为`acc`的数据
-#             writer.add_scalar(tag="resnet20/train/acc", step=step, value=value[step])
-#             # 向记录器添加一个tag为`loss`的数据
-#             writer.add_scalar(tag="resnet20/train/loss", step=step, value=1/(value[step] + 1))
-#             sleep(1)
+thread = DrawHistogram("./vl_log/histogram/vgg16", "vgg16")
+thread.start()
 
-train_thread = DrawScalar("./vl_log/scalar_test/resnet20/train", "resnet20")
-val_thread = DrawScalar("./vl_log/scalar_test/resnet20/val", "resnet20")
-train_thread.start()
-val_thread.start()
+def main():
+    with fluid.dygraph.guard():
+        net = vgg16()
+        layers = net.named_parameters()
+        for layer in layers:
+            print(layer[0])
+            # a = layer[1].numpy().reshape(-1)
+            # thread.set_value(epoch=0, value=a)
+            # sleep(1)
+            # break
+#     # value = np.arange(100)
+#     # for i in range(5):    
+#         # thread.set_value(epoch=i, value=value+i)
+#         # sleep(1)
+#     net = vgg16()
+#     net.su
 
-train_values = [i/1000 for i in range(1,1000)]
-val_values = [1000/i for i in range(1,1000)]
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("main KeyboardInterrupt...")
+    thread.stop()
+    thread.join()
+    sys.exit(1)
 
-try:
-    for i in range(500):
-        train_thread.set_value(i, {'loss': i, 'acc': train_values[i]})
-        val_thread.set_value(i, {'loss': i, 'acc': val_values[i]})
-        # train_thread.event.set()
-        # val_thread.event.set()
-        sleep(1)
-except KeyboardInterrupt:
-    print("Main KeyboardInterrupt....")
+# with fluid.dygraph.guard():
 
-train_thread.stop()
-train_thread.join()
-val_thread.stop()
-val_thread.join()
-sys.exit(1)
+#     net = vgg16()
+#     layers = net.named_parameters()
+#     # a = net.features.named_parameters()
+#     for layer in layers:
+#         a = layer[1].numpy().reshape(-1)
+#         print(a)
+#         break
