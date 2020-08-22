@@ -16,8 +16,14 @@ from vl_draw import *
 import sys
 
 def main():
-    model = resnet20()
-    calculate_params(model)
+    with fluid.dygraph.guard():
+        net = vgg16_binary()
+        for i in net.named_parameters():
+            print(i[0])
+        # a = np.random.randn(1, 3, 32, 32).astype(np.float32)
+        # input = fluid.dygraph.to_variable(a)
+        # out = net(input)
+        # print(out)
 
 if __name__ == "__main__":
     main()

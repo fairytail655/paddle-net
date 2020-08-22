@@ -27,27 +27,19 @@ parser = argparse.ArgumentParser(description='Paddle ConvNet Training')
 
 parser.add_argument('--results_dir', metavar='RESULTS_DIR', default='./results',
                     help='results dir')
-parser.add_argument('--save', metavar='SAVE', default='vgg16',
+parser.add_argument('--save', metavar='SAVE', default='vgg16_binary',
                     help='saved folder')
 parser.add_argument('--dataset', metavar='DATASET', default='cifar10',
                     help='dataset name or folder')
-parser.add_argument('--model', '-a', metavar='MODEL', default='vgg16',
+parser.add_argument('--model', '-a', metavar='MODEL', default='vgg16_binary',
                     choices=model_names,
                     help='model architecture: ' +
                     ' | '.join(model_names) +
                     ' (default: lenet)')
-# parser.add_argument('--input_size', type=int, default='32',
-#                     help='image input size')
-# parser.add_argument('--model_config', default='',
-#                     help='additional architecture configuration')
-# parser.add_argument('--type', default='torch.cuda.FloatTensor',
-#                     help='type of tensor - e.g torch.cuda.HalfTensor')
-# parser.add_argument('--gpu', default='0',
-#                     help='gpus used for training - e.g 0(none),1')
-# parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
-#                     help='number of data loading workers (default: 8)')
 parser.add_argument('--device', default='CPU', type=str, metavar='OPT',
                     help='choose to use CPU or GPU')
+parser.add_argument('--save-struct', default='false', type=str, metavar='OPT',
+                    help='whether to save the model struct')
 parser.add_argument('--epochs', default=300, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
@@ -119,15 +111,16 @@ def main():
         input_size = 32
         in_dim = 3
         target_size = 1
-    net = model(**model_config)
-    params = getattr(net, 'train_config', {'batch_size': args.batch_size})
-    image = fluid.layers.data(name='img', shape=[params['batch_size'], in_dim, input_size, input_size], 
-                              dtype='float32', append_batch_size=False)
-    predict = net(image)
-    exe = fluid.Executor(device)
-    exe.run(fluid.default_startup_program())
-    fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
-                                  target_vars=[predict], executor=exe, params_filename='__params__')
+    if args.save_struct == 'true':
+        net = model(**model_config)
+        params = getattr(net, 'train_config', {'batch_size': args.batch_size})
+        image = fluid.layers.data(name='img', shape=[params['batch_size'], in_dim, input_size, input_size], 
+                                dtype='float32', append_batch_size=False)
+        predict = net(image)
+        exe = fluid.Executor(device)
+        exe.run(fluid.default_startup_program())
+        fluid.io.save_inference_model(dirname=os.path.join(save_path,'struct'), feeded_var_names=['img'], 
+                                    target_vars=[predict], executor=exe, params_filename='__params__')
 
     with fluid.dygraph.guard(device):
 
@@ -253,7 +246,9 @@ def main():
 
         # visualDL histogram init
         hm_layer_names = [
-                            'features.0.conv.weight',
+                            'features.0.conv.conv.weight',
+                            'features.8.conv.conv.weight',
+                            'features.16.conv.conv.weight',
                         ]
         histogram_path = os.path.join("./vl_log/histogram", args.model)
         my_logging.info('save visualDL histogram log in: {}'.format(histogram_path))
