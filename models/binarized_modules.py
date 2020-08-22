@@ -13,10 +13,9 @@ class BinarizeLinear(Layer):
         input = fluid.layers.sign(input)
         w = self.linear.weight
         w_b = fluid.layers.sign(w)
-        w_value = w.numpy()
-        w.set_value(w_b.numpy())
+        self.linear.weight.set_value(w_b.numpy())
         out = self.linear(input)
-        w.set_value(w_value)
+        self.linear.weight.set_value(w.numpy())
 
         return out
 
@@ -32,9 +31,8 @@ class BinarizeConv2d(Layer):
         
         w = self.conv.weight
         w_b = fluid.layers.sign(w)
-        w_value = w.numpy()
-        w.set_value(w_b.numpy())
+        self.conv.weight.set_value(w_b.numpy())
         out = self.conv(input)
-        w.set_value(w_value)
+        self.conv.weight.set_value(w.numpy())
 
         return out
