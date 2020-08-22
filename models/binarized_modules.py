@@ -11,11 +11,13 @@ class BinarizeLinear(Layer):
 
     def forward(self, input):
         input = fluid.layers.sign(input)
-        w = self.linear.weight.numpy()
+
+        w = self.linear.weight
+        w_o = w.numpy()
         w_b = fluid.layers.sign(w).numpy()
-        self.linear.weight.set_value(w_b)
+        w.set_value(w_b)
         out = self.linear(input)
-        self.linear.weight.set_value(w)
+        w.set_value(w_o)
 
         return out
 
@@ -29,10 +31,11 @@ class BinarizeConv2d(Layer):
         if input.shape[1] != 3:
             input = fluid.layers.sign(input)
         
-        w = self.conv.weight.numpy()
+        w = self.conv.weight
+        w_o = w.numpy()
         w_b = fluid.layers.sign(w).numpy()
-        self.conv.weight.set_value(w_b)
+        w.set_value(w_b)
         out = self.conv(input)
-        self.conv.weight.set_value(w)
+        w.set_value(w_o)
 
         return out
