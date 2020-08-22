@@ -58,6 +58,7 @@ class VGG16(Layer):
         self.basic_linear1 = BasicLiner(512)
         self.basic_linear2 = BasicLiner(512)
         self.fc = linear(512, num_classes)
+        self.logsoftmax = fluid.layers.log_softmax
 
         self.train_config = {
             'epochs': 250,
@@ -92,7 +93,8 @@ class VGG16(Layer):
         l1_out = self.basic_linear1(_fs_out)
         l2_out = self.basic_linear2(l1_out)
         fc_out = self.fc(l2_out)
-        return fc_out
+        out = self.logsoftmax(fc_out)
+        return out
 
 def vgg16_binary(**kwargs):
     datasets = kwargs.get('dataset', 'cifar10')
