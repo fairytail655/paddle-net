@@ -12,10 +12,11 @@ class BinarizeLinear(Layer):
     def forward(self, input):
         input = fluid.layers.sign(input)
         w = self.linear.weight
+        w_value = w.numpy()
         w_b = fluid.layers.sign(w)
-        self.linear.weight.set_value(w_b.numpy())
+        w.set_value(w_b.numpy())
         out = self.linear(input)
-        self.linear.weight.set_value(w.numpy())
+        w.set_value(w_value)
 
         return out
 
@@ -30,9 +31,10 @@ class BinarizeConv2d(Layer):
             input = fluid.layers.sign(input)
         
         w = self.conv.weight
+        w_value = w.numpy()
         w_b = fluid.layers.sign(w)
-        self.conv.weight.set_value(w_b.numpy())
+        w.set_value(w_b.numpy())
         out = self.conv(input)
-        self.conv.weight.set_value(w.numpy())
+        w.set_value(w_value)
 
         return out
