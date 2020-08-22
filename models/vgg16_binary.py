@@ -45,7 +45,6 @@ class BasicLiner(Layer):
         self.act = act_layer
 
     def forward(self, input):
-        print(self.fc.linear.weight)
         fc_out = self.fc(input)
         bn_out = self.bn(fc_out)
         act_out = self.act(bn_out)
