@@ -61,12 +61,12 @@ class VGG16(Layer):
 
         self.train_config = {
             'epochs': 250,
-            'batch_size': 256,
+            'batch_size': 128,
             'opt_config': {
                 'optimizer': 'Adam',
                 'learning_rate': {
                     'bound': [50, 100, 150, 200],
-                    'value': [5e-3, 1e-3, 5e-4, 1e-4, 5e-5]
+                    'value': [1e-4, 5e-5, 1e-5, 5e-6, 1e-6]
                 },
                 # 'weight_decay': 1e-4,
             },
