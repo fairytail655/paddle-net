@@ -16,14 +16,11 @@ from vl_draw import *
 import sys
 
 def main():
-    with fluid.dygraph.guard():
-        net = vgg16_binary()
-        for i in net.named_parameters():
-            print(i[0])
-        # a = np.random.randn(1, 3, 32, 32).astype(np.float32)
-        # input = fluid.dygraph.to_variable(a)
-        # out = net(input)
-        # print(out)
+    # with fluid.dygraph.guard():
+        # net = vgg16_binary()
+        # fluid.layers.
+    data = fluid.layers.data(name="input", shape=[32, 784])
+    result = fluid.layers.tanh(data)
 
 if __name__ == "__main__":
     main()

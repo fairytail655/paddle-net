@@ -18,7 +18,7 @@ def norm_layer(planes):
     return BatchNorm(planes)
 
 def act_layer(input):
-    return fluid.layers.relu(input)
+    return fluid.layers.tanh(input)
 
 cfg = [[64, 64], [128, 128], [256, 256, 256], [512, 512, 512], [512, 512, 512]]
 
