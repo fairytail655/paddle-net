@@ -17,11 +17,31 @@ import sys
 
 def main():
     with fluid.dygraph.guard():
-        net = vgg16_binary()
-        a = np.random.rand(1, 3, 32, 32).astype(np.float32)
+        net = BinarizeLinear(1, 1)
+        w = net.linear.weight
+        a = np.ones([1], dtype='float32')
         input = fluid.dygraph.to_variable(a)
+        label = fluid.dygraph.to_variable(a)
         out = net(input)
-        print(out)
+        # net = Linear(1, 1, bias_attr=False)
+        # w = net.weight
+        # a = np.ones([1], dtype='float32')
+        # input = fluid.dygraph.to_variable(a)
+        # label = fluid.dygraph.to_variable(a*3)
+        # out = net(input)
+        loss = fluid.layers.square_error_cost(out, label)
+        loss.backward()
+        print(w)
+        # print(out)
+        # print(loss)
+        # print(w.gradient())
+        optimizer = fluid.optimizer.AdamOptimizer(0.1, parameter_list=net.parameters())
+        for i in range(100):
+            optimizer.minimize(loss)
+            net.clear_gradients()
+        print(w)
+
+
 
 if __name__ == "__main__":
     main()

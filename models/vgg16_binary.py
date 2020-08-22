@@ -45,6 +45,7 @@ class BasicLiner(Layer):
         self.act = act_layer
 
     def forward(self, input):
+        print(self.fc.linear.weight)
         fc_out = self.fc(input)
         bn_out = self.bn(fc_out)
         act_out = self.act(bn_out)
@@ -58,8 +59,8 @@ class VGG16(Layer):
         self.basic_linear1 = BasicLiner(512)
         self.basic_linear2 = BasicLiner(512)
         self.fc = linear(512, num_classes)
-        self.softmax = fluid.layers.softmax
-        self.log = fluid.layers.log
+        # self.softmax = fluid.layers.softmax
+        # self.log = fluid.layers.log
 
         self.train_config = {
             'epochs': 250,
@@ -68,7 +69,7 @@ class VGG16(Layer):
                 'optimizer': 'Adam',
                 'learning_rate': {
                     'bound': [50, 100, 150, 200],
-                    'value': [1e-4, 5e-5, 1e-5, 5e-6, 1e-6]
+                    'value': [1e-1, 5e-2, 1e-2, 5e-3, 1e-3]
                 },
                 # 'weight_decay': 1e-4,
             },
@@ -94,9 +95,9 @@ class VGG16(Layer):
         l1_out = self.basic_linear1(_fs_out)
         l2_out = self.basic_linear2(l1_out)
         fc_out = self.fc(l2_out)
-        sx_out = self.softmax(fc_out)
-        lg_out = self.log(sx_out)
-        return lg_out
+        # sx_out = self.softmax(fc_out)
+        # lg_out = self.log(sx_out)
+        return fc_out
 
 def vgg16_binary(**kwargs):
     datasets = kwargs.get('dataset', 'cifar10')
