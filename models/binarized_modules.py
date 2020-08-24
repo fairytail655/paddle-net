@@ -10,7 +10,7 @@ class BinarizeLinear(Layer):
         self.linear = Linear(*kargs, **kwargs)
 
     def forward(self, input):
-        input = fluid.layers.sign(input)
+        # input = fluid.layers.sign(input)
 
         w = self.linear.weight
         w_o = w.numpy()
@@ -28,8 +28,8 @@ class BinarizeConv2d(Layer):
         self.conv = Conv2D(*kargs, **kwargs)
 
     def forward(self, input):
-        if input.shape[1] != 3:
-            input = fluid.layers.sign(input)
+        # if input.shape[1] != 3:
+        #     input = fluid.layers.sign(input)
         
         w = self.conv.weight
         w_o = w.numpy()

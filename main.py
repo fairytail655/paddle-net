@@ -246,9 +246,12 @@ def main():
 
         # visualDL histogram init
         hm_layer_names = [
-                            # 'conv1.conv.weight',
+                            # 'features.0.conv.weight',
+                            # 'features.8.conv.weight',
+                            # 'features.16.conv.weight',
+                            'features.0.conv.conv.weight',
                             'features.8.conv.conv.weight',
-                            # 'features.16.conv.conv.weight',
+                            'features.16.conv.conv.weight',
                         ]
         histogram_path = os.path.join("./vl_log/histogram", args.model)
         my_logging.info('save visualDL histogram log in: {}'.format(histogram_path))
